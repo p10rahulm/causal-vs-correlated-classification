@@ -4,6 +4,7 @@ import json
 import time
 from datetime import datetime
 
+
 def get_api_key():
     try:
         with open("_claude_key.txt", "r") as file:
@@ -84,12 +85,3 @@ def save_error(error_message):
 
 
 
-if __name__=="__main__":
-    user_prompt = """
-    Please tell me your name? Please give me the output as a json file. It should contain no additional text except the json file. 
-    """
-    response = get_claude_response(user_prompt)
-    if response:
-        print(json.dumps(response, indent=2))
-    else:
-        print("Failed to get a valid response from the API.")

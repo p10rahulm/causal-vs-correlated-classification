@@ -1,6 +1,0 @@
-Attempt 2: Error decoding JSON: No JSON object or array found in the response: line 1 column 1 (char 0)
-Response text: Here's the output as a JSON file:
-
-{
-  "name": "Claude"
-}
