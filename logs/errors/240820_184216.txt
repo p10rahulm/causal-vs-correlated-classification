@@ -1,0 +1,2 @@
+Attempt 4: Error decoding JSON: No JSON object or array found in the response: line 1 column 1 (char 0)
+Response text: My name is Claude.
