@@ -3,7 +3,7 @@ import os
 import json
 import time
 from datetime import datetime
-
+from pathlib import Path
 
 def get_api_key():
     try:
@@ -83,5 +83,43 @@ def save_error(error_message):
     print(f"Error logged to {filepath}")
 
 
+def save_results(results, filename, directory=None, overwrite=False, ensure_ascii=False):
+    """
+    Save results to a JSON file.
 
+    Args:
+    - results: The data to be saved (must be JSON serializable)
+    - filename: Name of the file to save the results
+    - directory: Directory to save the file (default is current directory)
+    - overwrite: If True, overwrite existing file; if False, append number to filename (default False)
+    - ensure_ascii: If False, allow non-ASCII characters in output (default False)
+
+    Returns:
+    - Path of the saved file
+    """
+    # Create full path
+    if directory:
+        Path(directory).mkdir(parents=True, exist_ok=True)
+        full_path = Path(directory) / filename
+    else:
+        full_path = Path(filename)
+
+    # Handle existing file
+    if full_path.exists() and not overwrite:
+        base = full_path.stem
+        extension = full_path.suffix
+        counter = 1
+        while full_path.exists():
+            full_path = full_path.with_name(f"{base}_{counter}{extension}")
+            counter += 1
+
+    # Save the file
+    try:
+        with open(full_path, 'w', encoding='utf-8') as f:
+            json.dump(results, f, indent=2, ensure_ascii=ensure_ascii)
+        print(f"Results saved successfully to {full_path}")
+        return full_path
+    except Exception as e:
+        print(f"Error saving results: {e}")
+        return None
 
