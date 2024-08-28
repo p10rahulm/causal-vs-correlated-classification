@@ -26,15 +26,14 @@ class nnClassifier(nn.Module):
         self.input_dim = input_dim
         self.hidden_dim_1 = hidden_dim_1
         self.hidden_dim_2 = hidden_dim_2
-        self.out_dim = 1
+        self.out_dim = 0
         self.fc1 = nn.Linear(self.input_dim, self.hidden_dim_1) 
         self.fc2 = nn.Linear(self.hidden_dim_1, self.hidden_dim_2)
-        # self.fc3 = nn.Linear(self.hidden_dim_2, self.out_dim)
 
     def forward(self, x):
         x = F.relu(self.fc1(x))
-        x = torch.softmax(self.fc2(x), dim=1)
-        # x = torch.sigmoid(self.fc3(x))
+        # x = torch.softmax(self.fc2(x), self.out_dim)
+        x = self.fc2(x)
         return x
     
 
@@ -101,13 +100,12 @@ if __name__ == "__main__":
     
     input_dim = X_train.size()[1]
     
-    # sys.exit()
     model = nnClassifier(input_dim=input_dim, hidden_dim_2= len(np.unique(y)))
     model.train()
     
-    n_iter = 250
+    n_iter = 10 # 250
 
-    # loss_list = []
+    loss_list = []
     
     optimizer = optim.AdamW(model.parameters(),
                             lr=1e-4,
@@ -125,7 +123,10 @@ if __name__ == "__main__":
         for x, y in tqdm(dataloader):
             optimizer.zero_grad()
             y_pred = model(x)
+
             loss = criterion(y_pred, y)
+            loss_list.append(loss)
+
             loss.backward(retain_graph = True)
             optimizer.step()
             scheduler.step()
@@ -136,4 +137,6 @@ if __name__ == "__main__":
         for x in X_test:
             prediction = model(x)
             predictions.append(prediction)
-    print(cm(y_test, predictions))
+    predictions = np.array(predictions)
+    print(np.array(loss_list))
+    print('test_loss = ', criterion(torch.from_numpy(predictions).clone().detach(), y_test))
