@@ -1,31 +1,34 @@
-['The quick brown fox', 'the lazy dog', 'jumps over dog', '.']
+sentence = The quick brown fox jumps over the lazy dog.
+result = ['The quick brown fox', 'jumps over', 'the lazy dog']
+sentence = The movie was great. The main actors were Tom Cruise and Nicole Kidman. I wish to see it again.
+result = ['The movie', 'was', 'great', 'The main actors', 'were', 'Tom Cruise', 'and', 'Nicole Kidman', 'I', 'wish see', 'it', 'again']
 Sentence: The tall buildings in the city center are very impressive.
-Extracted Phrases: ['The tall buildings', 'the city center', 'in are very impressive .']
+Extracted Phrases: ['The tall buildings', 'in', 'the city center', 'are', 'very', 'impressive']
 
 Sentence: She quickly solved the complex math problem during the exam.
-Extracted Phrases: ['She', 'the complex math problem', 'the exam', 'solved quickly problem during exam', '.']
+Extracted Phrases: ['She', 'quickly', 'solved quickly during', 'the complex math problem', 'the exam']
 
 Sentence: The cat sat on the mat and looked out the window.
-Extracted Phrases: ['The cat', 'the mat', 'the window', 'sat on mat window', 'looked window', 'and out .']
+Extracted Phrases: ['The cat', 'sat on', 'the mat', 'and', 'looked', 'out', 'the window']
 
 Sentence: John and Mary went to the market to buy fresh vegetables.
-Extracted Phrases: ['John Mary', 'the market', 'fresh vegetables', 'went to market to vegetables', 'buy to vegetables', 'and .']
+Extracted Phrases: ['John', 'and', 'Mary', 'went to', 'the market', 'to', 'buy to', 'fresh vegetables']
 
 Sentence: The new smartphone features a high-resolution camera and a fast processor.
-Extracted Phrases: ['The new smartphone', 'a high-resolution camera', 'a fast processor', 'features camera', '.']
+Extracted Phrases: ['The new smartphone', 'features', 'a high-resolution camera', 'and', 'a fast processor']
 
 Sentence: A beautiful garden with colorful flowers was in the backyard.
-Extracted Phrases: ['A beautiful garden', 'colorful flowers', 'the backyard', 'with was in .']
+Extracted Phrases: ['A beautiful garden', 'with', 'colorful flowers', 'was', 'in', 'the backyard']
 
 Sentence: The scientist conducted an experiment to test the new hypothesis.
-Extracted Phrases: ['The scientist', 'an experiment', 'the new hypothesis', 'conducted experiment to hypothesis', 'test to hypothesis', '.']
+Extracted Phrases: ['The scientist', 'conducted', 'an experiment', 'to', 'test to', 'the new hypothesis']
 
 Sentence: The movie was entertaining, but the ending was quite predictable.
-Extracted Phrases: ['The movie', 'the ending', 'was entertaining , but was quite predictable .']
+Extracted Phrases: ['The movie', 'was', 'entertaining', 'but', 'the ending', 'was', 'quite', 'predictable']
 
 Sentence: During the hike, they saw a variety of wildlife and stunning landscapes.
-Extracted Phrases: ['the hike', 'they', 'a variety', 'wildlife', 'stunning landscapes', 'saw During hike variety of wildlife', ', .']
+Extracted Phrases: ['During', 'the hike', 'they', 'saw During', 'a variety', 'of', 'wildlife', 'and', 'stunning landscapes']
 
 Sentence: She wore a red dress to the party and received many compliments.
-Extracted Phrases: ['She', 'a red dress', 'the party', 'many compliments', 'wore dress to party compliments', 'received compliments', 'and .']
+Extracted Phrases: ['She', 'wore', 'a red dress', 'to', 'the party', 'and', 'received', 'many compliments']
 

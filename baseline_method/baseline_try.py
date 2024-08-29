@@ -179,12 +179,3 @@ if __name__ == "__main__":
         print(f"Train Loss: {train_epoch_loss:.4f}")
     torch.save(model.state_dict(), 'outputs/multi_head_binary.pth')
     
-    # model.eval()
-    # predictions = []
-    # with torch.no_grad():
-    #     for x in X_test:
-    #         prediction = model(x)
-    #         predictions.append(prediction)
-    # predictions = np.array(predictions)
-    # print(loss_list)
-    # print('test_loss = ', criterion(torch.from_numpy(predictions).clone().detach(), y_test))
