@@ -90,7 +90,7 @@ def fetch_data(preprocess = True):
     w_z = json.loads(w_z)
     return data, w_z
 
-def tokenize(data, max_source_length=512):
+def tokenize(data, max_source_length=512, ret_choice = 'input_ids'):
     tokenizer = T5Tokenizer.from_pretrained("t5-base", max_source_length=512)
     
     TokenizerEncoding = tokenizer(
@@ -100,8 +100,12 @@ def tokenize(data, max_source_length=512):
         truncation=True,
         add_special_tokens=False,
         return_tensors="pt")
-    
-    return TokenizerEncoding, TokenizerEncoding['input_ids'], TokenizerEncoding['attention_mask']
+    if ret_choice == 'input_ids':
+        return TokenizerEncoding['input_ids']
+    elif ret_choice == 'attention_mask':
+        return TokenizerEncoding['attention_mask']
+    else:
+        return TokenizerEncoding
     
 def get_T5_embeddings(tok_for_embed):
     model = T5ForConditionalGeneration.from_pretrained("t5-base").to(device)
@@ -146,7 +150,7 @@ if __name__ == "__main__":
             z.append(key)
     
     # Obtaining the Embeddings
-    tok_encoder, tok_for_embed, tok_attention = tokenize(data)
+    tok_for_embed = tokenize(data)
     embeddings = get_T5_embeddings(tok_for_embed)
     stacked_embeds = torch.stack(embeddings, dim=0)
 
