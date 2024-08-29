@@ -42,17 +42,13 @@ def process_reviews(reviews, labels, num_samples=None):
             break
         analysis = analyze_sentiment(review)
         if analysis:
-            try:
-                parsed_analysis = json.loads(analysis)
-                result = {
-                    'review': review,
-                    'sentiment_phrases': parsed_analysis.get('sentiment_phrases', []),
-                    'neutral_phrases': parsed_analysis.get('neutral_phrases', []),
-                    'label': 'positive' if label == 1 else 'negative'
-                }
-                results.append(result)
-            except json.JSONDecodeError:
-                print(f"Failed to parse JSON for review {i}")
+            result = {
+                'review': review,
+                'sentiment_phrases': analysis.get('sentiment_phrases', []),
+                'neutral_phrases': analysis.get('neutral_phrases', []),
+                'label': 'positive' if label == 1 else 'negative'
+            }
+            results.append(result)
         else:
             print(f"Failed to get a valid response for review {i}")
     return results
