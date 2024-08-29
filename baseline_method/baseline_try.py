@@ -141,14 +141,14 @@ def train(model, dataloader, optimizer, train_dataset, device='cpu', l=37):
 if __name__ == "__main__":
     device = "cpu"
     data, w_z = fetch_data()
-    w = []
-    z = []
-    for key, val in w_z.items():
-        if val == -1:
-            w.append(key)
-        else:
-            z.append(key)
-    
+    # w = []
+    # z = []
+    # for key, val in w_z.items():
+    #     if val == -1:
+    #         w.append(key)
+    #     else:
+    #         z.append(key)
+    #
     # Obtaining the Embeddings
     tok_for_embed = tokenize(data)
     embeddings = get_T5_embeddings(tok_for_embed)
