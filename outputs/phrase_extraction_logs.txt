@@ -1,0 +1,31 @@
+['The quick brown fox', 'the lazy dog', 'jumps over dog', '.']
+Sentence: The tall buildings in the city center are very impressive.
+Extracted Phrases: ['The tall buildings', 'the city center', 'in are very impressive .']
+
+Sentence: She quickly solved the complex math problem during the exam.
+Extracted Phrases: ['She', 'the complex math problem', 'the exam', 'solved quickly problem during exam', '.']
+
+Sentence: The cat sat on the mat and looked out the window.
+Extracted Phrases: ['The cat', 'the mat', 'the window', 'sat on mat window', 'looked window', 'and out .']
+
+Sentence: John and Mary went to the market to buy fresh vegetables.
+Extracted Phrases: ['John Mary', 'the market', 'fresh vegetables', 'went to market to vegetables', 'buy to vegetables', 'and .']
+
+Sentence: The new smartphone features a high-resolution camera and a fast processor.
+Extracted Phrases: ['The new smartphone', 'a high-resolution camera', 'a fast processor', 'features camera', '.']
+
+Sentence: A beautiful garden with colorful flowers was in the backyard.
+Extracted Phrases: ['A beautiful garden', 'colorful flowers', 'the backyard', 'with was in .']
+
+Sentence: The scientist conducted an experiment to test the new hypothesis.
+Extracted Phrases: ['The scientist', 'an experiment', 'the new hypothesis', 'conducted experiment to hypothesis', 'test to hypothesis', '.']
+
+Sentence: The movie was entertaining, but the ending was quite predictable.
+Extracted Phrases: ['The movie', 'the ending', 'was entertaining , but was quite predictable .']
+
+Sentence: During the hike, they saw a variety of wildlife and stunning landscapes.
+Extracted Phrases: ['the hike', 'they', 'a variety', 'wildlife', 'stunning landscapes', 'saw During hike variety of wildlife', ', .']
+
+Sentence: She wore a red dress to the party and received many compliments.
+Extracted Phrases: ['She', 'a red dress', 'the party', 'many compliments', 'wore dress to party compliments', 'received compliments', 'and .']
+

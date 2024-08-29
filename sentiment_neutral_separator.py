@@ -24,7 +24,7 @@ def prompt_builder(sentence):
 
         Task: Analyze the given movie review and separate it into sentiment and neutral phrases in the given JSON format.
 
-        IMPORTANT: Your response must be ONLY valid JSON that exactly matches the structure of the example output. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
+        IMPORTANT: Your response must be ONLY valid JSON that exactly matches the structure of the example outputs. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
     """).strip()
 
     # Check the same for genre.
@@ -58,7 +58,7 @@ def main():
     # Process a subset of the training dataset
     train_reviews, train_labels = get_imdb_train_samples(n=10)
     train_results = process_reviews(train_reviews, train_labels)
-    save_results(train_results, 'output/imdb_train_sentiment_analysis.json')
+    save_results(train_results, 'outputs/imdb_train_sentiment_analysis.json')
     print(f"Processed {len(train_results)} training reviews and saved results to imdb_train_sentiment_analysis.json")
 
 

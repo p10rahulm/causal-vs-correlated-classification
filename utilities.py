@@ -4,6 +4,9 @@ import json
 import time
 from datetime import datetime
 from pathlib import Path
+import spacy
+from spacy.cli import download
+
 
 def get_api_key():
     try:
@@ -92,7 +95,7 @@ def save_results(results, filename, directory=None, overwrite=False, ensure_asci
     - filename: Name of the file to save the results
     - directory: Directory to save the file (default is current directory)
     - overwrite: If True, overwrite existing file; if False, append number to filename (default False)
-    - ensure_ascii: If False, allow non-ASCII characters in output (default False)
+    - ensure_ascii: If False, allow non-ASCII characters in outputs (default False)
 
     Returns:
     - Path of the saved file
@@ -123,3 +126,13 @@ def save_results(results, filename, directory=None, overwrite=False, ensure_asci
         print(f"Error saving results: {e}")
         return None
 
+def load_spacy_model(model_name="en_core_web_sm"):
+    try:
+        # Attempt to load the model
+        nlp = spacy.load(model_name)
+    except OSError:
+        # If model is not found, download it
+        print(f"Model '{model_name}' not found. Downloading...")
+        download(model_name)
+        nlp = spacy.load(model_name)
+    return nlp
