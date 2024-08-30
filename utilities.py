@@ -6,6 +6,9 @@ from datetime import datetime
 from pathlib import Path
 import spacy
 from spacy.cli import download
+import random
+import numpy as np
+
 
 
 def get_api_key():
@@ -126,6 +129,54 @@ def save_results(results, filename, directory=None, overwrite=False, ensure_asci
         print(f"Error saving results: {e}")
         return None
 
+
+def append_to_json(result, filename, directory=None, ensure_ascii=False):
+    """
+    Append a result to a JSON file. If the file doesn't exist, create it.
+    If it exists, append the new result to the existing data.
+
+    Args:
+    - result: The data to be appended (must be JSON serializable)
+    - filename: Name of the file to save/append the results
+    - directory: Directory to save the file (default is current directory)
+    - ensure_ascii: If False, allow non-ASCII characters in outputs (default False)
+
+    Returns:
+    - Path of the saved file
+    """
+    # Create full path
+    if directory:
+        Path(directory).mkdir(parents=True, exist_ok=True)
+        full_path = Path(directory) / filename
+    else:
+        full_path = Path(filename)
+
+    # Read existing data or initialize empty list
+    if full_path.exists():
+        with open(full_path, 'r', encoding='utf-8') as f:
+            try:
+                data = json.load(f)
+                if not isinstance(data, list):
+                    data = [data]
+            except json.JSONDecodeError:
+                print(f"Error reading existing file. Initializing with empty list.")
+                data = []
+    else:
+        data = []
+
+    # Append new result
+    data.append(result)
+
+    # Save the updated file
+    try:
+        with open(full_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=2, ensure_ascii=ensure_ascii)
+        print(f"Result appended successfully to {full_path}")
+        return full_path
+    except Exception as e:
+        print(f"Error appending result: {e}")
+        return None
+
 def load_spacy_model(model_name="en_core_web_sm"):
     try:
         # Attempt to load the model
@@ -136,3 +187,35 @@ def load_spacy_model(model_name="en_core_web_sm"):
         download(model_name)
         nlp = spacy.load(model_name)
     return nlp
+
+
+def set_seed(seed=42):
+    """
+    Set the random seed for reproducibility across multiple libraries.
+
+    This function sets the seed for Python's built-in random module, NumPy,
+    PyTorch (if available), and TensorFlow (if available).
+
+    Args:
+    - seed (int): The seed value to use
+    """
+    random.seed(seed)
+    np.random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+
+    try:
+        import torch
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed(seed)
+            torch.cuda.manual_seed_all(seed)  # for multi-GPU
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False
+    except ImportError:
+        pass  # PyTorch not available
+
+    try:
+        import tensorflow as tf
+        tf.random.set_seed(seed)
+    except ImportError:
+        pass  # TensorFlow not available

@@ -1,0 +1,19 @@
+Here are two examples using "Sentiment" as the classification word:
+
+Example 1:
+Full text: "The special effects were amazing, but the plot was confusing. Tom Cruise gave a stellar performance as always."
+Extracted phrases: ["The special effects were amazing", "but the plot was confusing", "Tom Cruise gave a stellar performance", "as always"]
+Output:
+{
+    "sentiment_phrases": ["The special effects were amazing", "but the plot was confusing", "gave a stellar performance", "as always"],
+    "neutral_phrases": ["Tom Cruise"]
+}
+
+Example 2:
+Full text: "The movie was released in 2022. While the cinematography was breathtaking, the dialogue felt forced and unnatural."
+Extracted phrases: ["The movie was released in 2022", "While the cinematography was breathtaking", "the dialogue felt forced and unnatural"]
+Output:
+{
+    "sentiment_phrases": ["While the cinematography was breathtaking", "the dialogue felt forced and unnatural"],
+    "neutral_phrases": ["The movie was released in 2022"]
+}

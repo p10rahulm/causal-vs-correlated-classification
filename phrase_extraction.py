@@ -10,43 +10,50 @@ def extract_phrases(sentence):
     """
     Extracts phrases from a given sentence using spaCy.
     Includes noun chunks, verb phrases, and individual words,
-    ensuring all words are captured without unwanted merging.
+    ensuring all words are captured without duplication or omission.
     Phrases are returned in the order they appear in the original sentence.
     """
     doc = nlp(sentence)
 
     phrases = []
-    included_words = set()
+    current_phrase = []
+    last_end = 0
 
-    # Helper function to add a phrase
-    def add_phrase(start, end, phrase_text):
-        phrases.append((start, end, phrase_text))
-        included_words.update(range(start, end))
+    def add_phrase():
+        if current_phrase:
+            phrases.append(' '.join(current_phrase))
+            current_phrase.clear()
 
-    # Extract noun chunks
-    for chunk in doc.noun_chunks:
-        add_phrase(chunk.start, chunk.end, chunk.text)
-
-    # Process verbs and their direct dependents
     for token in doc:
-        if token.pos_ == "VERB" and token.i not in included_words:
-            verb_phrase = [token.text]
-            verb_start = token.i
-            verb_end = token.i + 1
-            for child in token.children:
-                if child.dep_ in ["dobj", "pobj", "acomp", "xcomp", "advmod", "aux", "prep"] and child.i not in included_words:
-                    verb_phrase.append(child.text)
-                    verb_end = max(verb_end, child.i + 1)
-            add_phrase(verb_start, verb_end, " ".join(verb_phrase))
+        if token.i < last_end:
+            continue
 
-    # Add remaining words as individual phrases
-    for token in doc:
-        # if token.i not in included_words and not token.is_punct:
-        if token.i not in included_words:
-            add_phrase(token.i, token.i + 1, token.text)
+        if token.i > last_end:
+            add_phrase()
+            phrases.extend(t.text for t in doc[last_end:token.i] if not t.is_punct)
 
-    # Sort phrases by their start position and return only the text
-    return [phrase for _, _, phrase in sorted(phrases)]
+        if token.i == token.head.i:  # Root or isolated token
+            add_phrase()
+            if not token.is_punct:
+                phrases.append(token.text)
+            last_end = token.i + 1
+        elif token.dep_ in ['compound', 'amod', 'det', 'nummod']:  # Part of a noun phrase
+            current_phrase.append(token.text)
+            last_end = token.i + 1
+        elif token.head.i < token.i:  # End of a phrase
+            current_phrase.append(token.text)
+            add_phrase()
+            last_end = token.i + 1
+        else:  # Start of a new phrase
+            add_phrase()
+            current_phrase.append(token.text)
+            last_end = token.i + 1
+
+    add_phrase()
+    if last_end < len(doc):
+        phrases.extend(t.text for t in doc[last_end:] if not t.is_punct)
+
+    return phrases
 
 
 def remove_punctuation_phrases(phrases):
@@ -70,14 +77,10 @@ def remove_punctuation_phrases(phrases):
 
 if __name__=="__main__":
     # Example usage:
-    sentence = "The quick brown fox jumps over the lazy dog."
-    result = remove_punctuation_phrases(extract_phrases(sentence))
-    print(f"sentence = {sentence}\nresult = {result}")
-    sentence = "The movie was great. The main actors were Tom Cruise and Nicole Kidman. I wish to see it again."
-    result = remove_punctuation_phrases(extract_phrases(sentence))
-    print(f"sentence = {sentence}\nresult = {result}")
+
 
     test_sentences = [
+        "The quick brown fox jumps over the lazy dog.",
         "The tall buildings in the city center are very impressive.",
         "She quickly solved the complex math problem during the exam.",
         "The cat sat on the mat and looked out the window.",
@@ -87,7 +90,8 @@ if __name__=="__main__":
         "The scientist conducted an experiment to test the new hypothesis.",
         "The movie was entertaining, but the ending was quite predictable.",
         "During the hike, they saw a variety of wildlife and stunning landscapes.",
-        "She wore a red dress to the party and received many compliments."
+        "She wore a red dress to the party and received many compliments.",
+        "The movie was great. The main actors were Tom Cruise and Nicole Kidman. I wish to see it again."
     ]
 
     for sentence in test_sentences:

@@ -1,4 +1,6 @@
 import torch.nn as nn
+import torch.nn.functional as F
+
 
 class MultiHeadBinaryModel(nn.Module):
     def __init__(self, input_dim=393216, hidden_dim_1=1000, hidden_dim_2=10, l=37):
