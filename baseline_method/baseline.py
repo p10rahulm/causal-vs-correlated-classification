@@ -53,6 +53,31 @@ class BinaryDataset(Dataset):
         return ret_dict
 
 
+class MultiHeadBinaryModel(nn.Module):
+    def __init__(self, input_dim=393216, hidden_dim_1=1000, hidden_dim_2=10, l=37):
+        super(MultiHeadBinaryModel, self).__init__()
+        self.input_dim = input_dim
+        self.hidden_dim_1 = hidden_dim_1
+        self.hidden_dim_2 = hidden_dim_2
+        self.out_dim = 1
+        self.fc1 = nn.Linear(self.input_dim, self.hidden_dim_1)
+        self.fc2 = nn.Linear(self.hidden_dim_1, self.hidden_dim_2)
+        self.l = l
+
+        for i in range(1, self.l + 1):
+            setattr(self, f"out{i}", nn.Linear(self.hidden_dim_2, self.out_dim))
+
+    def forward(self, x):
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+
+        out_list = []
+        for i in range(1, self.l + 1):
+            var = getattr(self, f"out{i}")
+            out_list.append(F.sigmoid(var(x)))
+
+        return [out for out in out_list]
+
 
 def binary_loss_fn(outputs, targets):
     losses = []
@@ -101,7 +126,6 @@ def train(model, dataloader, optimizer, train_dataset, device='cpu', l=37):
     counter = 0
     train_running_loss = 0.0
 
-    print("In here!")
     for i, data in tqdm(enumerate(dataloader), total=int(len(train_dataset) / dataloader.batch_size)):
         counter += 1
         features = data['features'].to(device)
@@ -116,7 +140,6 @@ def train(model, dataloader, optimizer, train_dataset, device='cpu', l=37):
         optimizer.step()
 
     train_loss = train_running_loss / counter
-    print("Out!")
     return train_loss
 
 
@@ -131,12 +154,14 @@ if __name__ == "__main__":
     #     else:
     #         z.append(key)
     #
+
     # Obtaining the Embeddings
     tok_for_embed = tokenize(data)
     model = T5ForConditionalGeneration.from_pretrained("t5-base").to(device)
     tokenEmbeddingFunction = model.encoder.embed_tokens
     embeddings = get_embeddings(tok_for_embed, tokenEmbeddingFunction)
     stacked_embeds = torch.stack(embeddings, dim=0)
+    stacked_embeds = torch.mean(stacked_embeds, dim=1)
 
     # Encoding the multi-label outputs
     encoder = MultiLabelBinarizer()
@@ -156,7 +181,7 @@ if __name__ == "__main__":
     model = MultiHeadBinaryModel()
 
     optimizer = optim.Adam(params=model.parameters(), lr=0.001)
-    epochs = 5  # 100
+    epochs = 100
     model.to(device)
 
     train_loss = []
@@ -165,4 +190,4 @@ if __name__ == "__main__":
         train_epoch_loss = train(model, dataloader, optimizer, train_dataset, device)
         train_loss.append(train_epoch_loss)
         print(f"Train Loss: {train_epoch_loss:.4f}")
-    torch.save(model.state_dict(), 'outputs/multi_head_binary.pth')
+    # torch.save(model.state_dict(), 'models/multi_head_binary.pth')
