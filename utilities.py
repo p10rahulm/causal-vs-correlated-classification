@@ -177,6 +177,7 @@ def append_to_json(result, filename, directory=None, ensure_ascii=False):
         print(f"Error appending result: {e}")
         return None
 
+
 def load_spacy_model(model_name="en_core_web_sm"):
     try:
         # Attempt to load the model
@@ -219,3 +220,17 @@ def set_seed(seed=42):
         tf.random.set_seed(seed)
     except ImportError:
         pass  # TensorFlow not available
+
+
+def get_project_root():
+    """
+    Find the project root by searching for a marker file or directory.
+    This could be a .git directory, a specific config file, or any other
+    file/directory that marks the root of your project.
+    """
+    current_path = os.path.abspath(__file__)
+    while current_path != '/':
+        if os.path.exists(os.path.join(current_path, '.git')):
+            return current_path
+        current_path = os.path.dirname(current_path)
+    raise FileNotFoundError("Could not find project root. Make sure .git directory exists.")

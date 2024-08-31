@@ -4,7 +4,7 @@
 
 
 input/
-models/
+trained_models
 
 .idea/
 _claude_key.txt

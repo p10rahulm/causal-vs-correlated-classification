@@ -1,6 +1,6 @@
 # optimizers/optimizer_params.py
 
-from torch.optim import Adam, AdamW, SGD
+from torch.optim import Adam, AdamW, NAdam
 
 optimizer_configs = {
     'adam': {
@@ -15,21 +15,23 @@ optimizer_configs = {
     'adamw': {
         'class': AdamW,
         'params': {
-            'lr': 2e-5,
+            'lr': 3e-4,
             'betas': (0.9, 0.999),
             'eps': 1e-8,
             'weight_decay': 0.01
         }
     },
-    'sgd': {
-        'class': SGD,
+    'nadam': {
+        'class': NAdam,
         'params': {
-            'lr': 0.01,
-            'momentum': 0.9,
-            'weight_decay': 0.0001
+            'lr': 2e-3,
+            'betas': (0.9, 0.999),
+            'eps': 1e-8,
+            'weight_decay': 0.01
         }
     }
 }
 
 def get_optimizer_config(optimizer_name):
-    return optimizer_configs.get(optimizer_name.lower())
+    config = optimizer_configs.get(optimizer_name.lower())
+    return config.copy() if config else None
