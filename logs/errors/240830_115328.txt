@@ -1,0 +1,1 @@
+Attempt 1: Error occurred: Error code: 500 - {'type': 'error', 'error': {'type': 'api_error', 'message': 'Internal server error'}}
