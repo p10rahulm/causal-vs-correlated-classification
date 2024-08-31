@@ -19,11 +19,16 @@ from optimizers.optimizer_params import get_optimizer_config
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from utilities import get_project_root
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from typing import Dict, Any, Tuple, List
+import logging
 
 
 class Trainer:
-    def __init__(self, model, data_module, optimizer_name='adam', optimizer_params=None,
-                 batch_size=32, num_epochs=3, device=None):
+    def __init__(self, model: nn.Module, data_module: Any, optimizer_name: str = 'adam',
+                 dataset_name='imdb',
+                 optimizer_params: Dict[str, Any] = None, batch_size: int = 32,
+                 num_epochs: int = 3, device: str = None, patience: int = 3):
         self.model = model
         self.data_module = data_module
         self.batch_size = batch_size
@@ -32,6 +37,10 @@ class Trainer:
         self.classification_word = model.classification_word
         self.device = device if device else ('cuda' if torch.cuda.is_available() else 'cpu')
         self.model.to(self.device)
+        self.patience = patience
+
+        self.dataset_name = dataset_name
+        self.num_hidden_layers = self.model.num_hidden_layers
 
         # Set up optimizer
         optimizer_config = get_optimizer_config(optimizer_name)
@@ -41,35 +50,42 @@ class Trainer:
             optimizer_config['params'].update(optimizer_params)
         self.optimizer = optimizer_config['class'](self.model.parameters(), **optimizer_config['params'])
 
+        self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=patience)
         self.loss_fn = nn.CrossEntropyLoss()
+        self.val_loader = None
+        self.train_loader = None
 
-    def prepare_data(self):
-        self.data_module.load_data()  # Make sure to load the data first
-        texts, labels = self.data_module.preprocess()
-        train_texts, val_texts, train_labels, val_labels = train_test_split(texts, labels, test_size=0.2,
-                                                                            random_state=42)
+        # Set up logging
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
 
-        # Tokenize data
-        train_encodings = self.model.tokenizer(train_texts, truncation=True, padding=True)
-        val_encodings = self.model.tokenizer(val_texts, truncation=True, padding=True)
+    def prepare_data(self) -> None:
+        if self.train_loader is None or self.val_loader is None:
+            self.data_module.load_data()
+            texts, labels = self.data_module.preprocess()
 
-        # Create tensor datasets
-        train_dataset = TensorDataset(
-            torch.tensor(train_encodings['input_ids']),
-            torch.tensor(train_encodings['attention_mask']),
-            torch.tensor(train_labels)
-        )
-        val_dataset = TensorDataset(
-            torch.tensor(val_encodings['input_ids']),
-            torch.tensor(val_encodings['attention_mask']),
-            torch.tensor(val_labels)
-        )
+            train_texts, val_texts, train_labels, val_labels = train_test_split(
+                texts, labels, test_size=0.2, random_state=42
+            )
 
-        # Create data loaders
-        self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
-        self.val_loader = DataLoader(val_dataset, batch_size=self.batch_size)
+            train_encodings = self.model.tokenizer(train_texts, truncation=True, padding=True)
+            val_encodings = self.model.tokenizer(val_texts, truncation=True, padding=True)
 
-    def train_epoch(self):
+            train_dataset = TensorDataset(
+                torch.tensor(train_encodings['input_ids']),
+                torch.tensor(train_encodings['attention_mask']),
+                torch.tensor(train_labels)
+            )
+            val_dataset = TensorDataset(
+                torch.tensor(val_encodings['input_ids']),
+                torch.tensor(val_encodings['attention_mask']),
+                torch.tensor(val_labels)
+            )
+
+            self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+            self.val_loader = DataLoader(val_dataset, batch_size=self.batch_size)
+
+    def train_epoch(self) -> float:
         self.model.train()
         total_loss = 0
         progress_bar = tqdm(self.train_loader, desc="Training")
@@ -84,7 +100,7 @@ class Trainer:
             progress_bar.set_postfix({'loss': f'{loss.item():.4f}'})
         return total_loss / len(self.train_loader)
 
-    def validate(self):
+    def validate(self) -> Tuple[float, float, float, float, float]:
         self.model.eval()
         total_loss = 0
         all_preds = []
@@ -105,23 +121,76 @@ class Trainer:
         precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='weighted')
         return total_loss / len(self.val_loader), accuracy, precision, recall, f1
 
-    def train(self):
+    def train(self) -> List[Dict[str, float]]:
         self.prepare_data()
+        best_val_loss = float('inf')
+        epochs_without_improvement = 0
+        training_history = []
+
         for epoch in range(self.num_epochs):
-            print(f"\nEpoch {epoch + 1}/{self.num_epochs}")
+            self.logger.info(f"\nEpoch {epoch + 1}/{self.num_epochs}")
             train_loss = self.train_epoch()
             val_loss, accuracy, precision, recall, f1 = self.validate()
-            print(f"Train loss: {train_loss:.4f}, Val loss: {val_loss:.4f}")
-            print(f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}")
+            self.scheduler.step(val_loss)
 
-    def save_model(self, path):
-        """Basic method to save the model."""
+            epoch_stats = {
+                'epoch': epoch + 1,
+                'train_loss': train_loss,
+                'val_loss': val_loss,
+                'accuracy': accuracy,
+                'precision': precision,
+                'recall': recall,
+                'f1': f1
+            }
+            training_history.append(epoch_stats)
+
+            self.logger.info(f"Train loss: {train_loss:.4f}, Val loss: {val_loss:.4f}")
+            self.logger.info(
+                f"Accuracy: {accuracy:.4f}, Precision: {precision:.4f}, Recall: {recall:.4f}, F1: {f1:.4f}")
+
+            if val_loss < best_val_loss:
+                best_val_loss = val_loss
+                self.save_trained_model_with_path(self.dataset_name, self.num_hidden_layers, filename='best_model.pth')
+                epochs_without_improvement = 0
+            else:
+                epochs_without_improvement += 1
+
+            if epochs_without_improvement >= self.patience:
+                self.logger.info(f"Early stopping triggered after {epoch + 1} epochs")
+                break
+
+        return training_history
+
+    def save_model(self, path: str) -> None:
         torch.save(self.model.state_dict(), path)
-        print(f"Model saved to {path}")
+        self.logger.info(f"Model saved to {path}")
 
-    def load_model(self, path):
+    def load_model(self, path: str) -> None:
         self.model.load_state_dict(torch.load(path))
-        print(f"Model loaded from {path}")
+        self.logger.info(f"Model loaded from {path}")
+
+    def get_best_model(self) -> nn.Module:
+        self.load_model('best_model.pth')
+        return self.model
+
+    def save_trained_model_with_path(self, dataset_name, num_hidden_layers, filename=None):
+        # Get the project root directory
+        project_root = get_project_root()
+
+        # Create the directory structure
+        save_dir = os.path.join(project_root, "trained_models", dataset_name, self.classification_word.lower())
+        os.makedirs(save_dir, exist_ok=True)
+
+        # Create the filename with current date and time
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        if filename is None:
+            filename = f"{self.model_name}_{num_hidden_layers}hidden_{current_time}.pth"
+
+        # Full path
+        full_path = os.path.join(save_dir, filename)
+
+        # Use the trainer's save_model method
+        self.save_model(full_path)
 
 
 def save_trained_model(trainer, dataset_name, num_hidden_layers):

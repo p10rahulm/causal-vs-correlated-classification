@@ -10,7 +10,7 @@ class CausalNeutralClassifier(nn.Module):
         self.config = AutoConfig.from_pretrained(model_name)
         self.encoder = AutoModel.from_pretrained(model_name, config=self.config)
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-
+        self.num_hidden_layers = len(hidden_layers)
         self.dropout = nn.Dropout(dropout_rate)
 
         # Dynamically create classifier based on hidden_layers
