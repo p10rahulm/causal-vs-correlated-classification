@@ -38,8 +38,8 @@ class nnClassifier(nn.Module):
     
 
 def fetch_data(preprocess = True):
-    data = pd.read_csv('../../data_dir/originalTrainDataWithGenres.csv', sep='|')
-    with open('../../data_dir/setOfWords.txt') as f:
+    data = pd.read_csv('../../data/originalTrainDataWithGenres.csv', sep='|')
+    with open('../../data/setOfWords.txt') as f:
         w_z = f.read()
     w_z = json.loads(w_z)
     return data, w_z

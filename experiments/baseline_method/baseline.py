@@ -1,32 +1,23 @@
-import sys
-import os
 import json
 
 import pandas as pd
-import numpy as np
-import base64
 from tqdm import tqdm
 
 import torch
 import torch.nn as nn
 
 from sklearn.model_selection import train_test_split
-from sklearn import preprocessing
 from sklearn.preprocessing import MultiLabelBinarizer
 
-from sklearn.metrics import confusion_matrix as cm
-
 from transformers import T5Tokenizer, T5ForConditionalGeneration
-from torch.utils.data import DataLoader, TensorDataset, Dataset
+from torch.utils.data import DataLoader, Dataset
 import torch.optim as optim
-import torch.nn.functional as F
 
-import matplotlib.pyplot as plt
 import matplotlib
 
 matplotlib.style.use('ggplot')
 
-from model_code.binary_head import MultiHeadBinaryModel
+from models.binary_head import MultiHeadBinaryModel
 
 class BinaryDataset(Dataset):
     def __init__(self, x, y):
@@ -64,8 +55,8 @@ def binary_loss_fn(outputs, targets):
 
 
 def fetch_data(preprocess=True):
-    data = pd.read_csv('../data_dir/originalTrainDataWithGenres.csv', sep='|')
-    with open('../data_dir/setOfWords.txt') as f:
+    data = pd.read_csv('../../data/originalTrainDataWithGenres.csv', sep='|')
+    with open('../../data/setOfWords.txt') as f:
         w_z = f.read()
     w_z = json.loads(w_z)
     return data, w_z
