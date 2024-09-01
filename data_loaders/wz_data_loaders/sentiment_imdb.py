@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 import json
 import os
 import sys
@@ -12,15 +11,7 @@ while not (project_root / '.git').exists() and project_root != project_root.pare
 
 sys.path.insert(0, str(project_root))
 
-
-class BaseDataModule(ABC):
-    @abstractmethod
-    def load_data(self):
-        pass
-
-    @abstractmethod
-    def preprocess(self):
-        pass
+from data_loaders.base_data_module import BaseDataModule
 
 
 class CausalNeutralDataModule(BaseDataModule):
@@ -29,6 +20,7 @@ class CausalNeutralDataModule(BaseDataModule):
         self.classification_word = classification_word
         self.neutral_phrases = []
         self.causal_phrases = []  # Previously comparison_phrases
+        self.load_data()  # Load data upon initialization
 
     def load_data(self):
         with self.file_path.open('r') as file:

@@ -14,28 +14,27 @@ while not (project_root / '.git').exists() and project_root != project_root.pare
 sys.path.insert(0, str(project_root))
 
 from models.causal_neutral_model_variations import model_variations
-from data_loaders.wz_data_loaders.sentiment_imdb import CausalNeutralDataModule
+from data_loaders.classification_data_loaders.sentiment_imdb import IMDBDataModule
 from trainers.trainer import Trainer, save_trained_model
 from optimizers.optimizer_params import optimizer_configs
 
 
 def run_experiments():
     # Experiment parameters
-    models = ["distilbert", "xlnet", "bert", "deberta"]
+    models = ["distilbert", "t5", "roberta", "bert"]
     optimizers = ["adam", "adamw", "nadam"]
     hidden_layers = ["0_hidden", "1_hidden", "2_hidden"]
     learning_rates = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
     classification_word = "Sentiment"
     num_epochs = 5
-    batch_size = 32
+    batch_size = 4
 
     # Prepare data loader
-    file_path = "outputs/imdb_train_sentiment_analysis.json"
-
+    data_module = IMDBDataModule(classification_word)
 
     # Prepare results file
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = "outputs/wz_classifier_experiments"
+    results_dir = "outputs/imdb_sentiment_classifier_experiments"
     os.makedirs(results_dir, exist_ok=True)
     results_file = os.path.join(results_dir, f"experiment_results_{timestamp}.csv")
 
@@ -45,7 +44,10 @@ def run_experiments():
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
-        # Run experiments
+        best_model_config = None
+        best_performance = float('-inf')
+
+        # Run experiments (Hyperparameter search)
         for model_name, optimizer_name, hidden_layer, lr in product(models, optimizers, hidden_layers, learning_rates):
             print(f"Running experiment: {model_name}, {optimizer_name}, {hidden_layer}, lr={lr}")
 
@@ -57,13 +59,11 @@ def run_experiments():
             optimizer_config['params'] = optimizer_config['params'].copy()
             optimizer_config['params']['lr'] = lr
 
-            # Create a fresh instance of the data module for each experiment
-            data_module = CausalNeutralDataModule(file_path, classification_word)
-
             # Create and run trainer
             trainer = Trainer(model, data_module, optimizer_name=optimizer_name,
                               optimizer_params=optimizer_config['params'],
-                              batch_size=batch_size, num_epochs=num_epochs)
+                              batch_size=batch_size, num_epochs=num_epochs,
+                              use_datamodule_loaders=True)
 
             # Prepare data before training loop
             trainer.prepare_data()
@@ -99,10 +99,48 @@ def run_experiments():
                 })
                 csvfile.flush()  # Ensure data is written immediately
 
-            # Save the trained model
-            save_trained_model(trainer, "imdb", int(hidden_layer[0]))
+            # Update best model if current model performs better
+            if best_f1 > best_performance:
+                best_performance = best_f1
+                best_model_config = {
+                    'model_name': model_name,
+                    'optimizer_name': optimizer_name,
+                    'hidden_layer': hidden_layer,
+                    'learning_rate': lr
+                }
 
-    print(f"Experiments completed. Results saved to {results_file}")
+        print(f"Hyperparameter search completed. Best model configuration: {best_model_config}")
+
+        # Train best model on full training set
+        best_model = model_variations[best_model_config['model_name']][best_model_config['hidden_layer']](
+            classification_word, freeze_encoder=True)
+        optimizer_config = optimizer_configs[best_model_config['optimizer_name']].copy()
+        optimizer_config['params'] = optimizer_config['params'].copy()
+        optimizer_config['params']['lr'] = best_model_config['learning_rate']
+
+        # After finding the best model configuration
+        best_trainer = Trainer(best_model, data_module, optimizer_name=best_model_config['optimizer_name'],
+                               optimizer_params=optimizer_config['params'],
+                               batch_size=batch_size, num_epochs=num_epochs,
+                               use_datamodule_loaders=True)
+
+        print("Training best model on full dataset...")
+        epoch_losses = best_trainer.train_on_full_dataset(num_epochs)
+
+        # Evaluate on test set
+        test_loss, test_accuracy, test_precision, test_recall, test_f1 = best_trainer.test()
+
+        print(f"Final test performance:")
+        print(f"Loss: {test_loss:.4f}")
+        print(f"Accuracy: {test_accuracy:.4f}")
+        print(f"Precision: {test_precision:.4f}")
+        print(f"Recall: {test_recall:.4f}")
+        print(f"F1 Score: {test_f1:.4f}")
+
+        # Save the best model
+        save_trained_model(best_trainer, "imdb_sentiment", int(best_model_config['hidden_layer'][0]))
+
+        print(f"Experiments completed. Results saved to {results_file}")
 
 
 if __name__ == "__main__":

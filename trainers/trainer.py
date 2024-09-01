@@ -20,15 +20,17 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from utilities import get_project_root
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-from typing import Dict, Any, Tuple, List
+from typing import Dict, Any, Tuple, List, Union
 import logging
+from data_loaders.base_data_module import BaseDataModule
 
 
 class Trainer:
-    def __init__(self, model: nn.Module, data_module: Any, optimizer_name: str = 'adam',
-                 dataset_name='imdb',
+    def __init__(self, model: nn.Module, data_module: Union[BaseDataModule, Any], optimizer_name: str = 'adam',
+                 dataset_name: str = 'imdb',
                  optimizer_params: Dict[str, Any] = None, batch_size: int = 32,
-                 num_epochs: int = 3, device: str = None, patience: int = 3):
+                 num_epochs: int = 3, device: Union[str, None] = None, patience: int = 3,
+                 use_datamodule_loaders: bool = False):
         self.model = model
         self.data_module = data_module
         self.batch_size = batch_size
@@ -54,6 +56,7 @@ class Trainer:
         self.loss_fn = nn.CrossEntropyLoss()
         self.val_loader = None
         self.train_loader = None
+        self.use_datamodule_loaders = use_datamodule_loaders
 
         # Set up logging
         logging.basicConfig(level=logging.INFO)
@@ -61,29 +64,36 @@ class Trainer:
 
     def prepare_data(self) -> None:
         if self.train_loader is None or self.val_loader is None:
-            self.data_module.load_data()
-            texts, labels = self.data_module.preprocess()
+            if self.use_datamodule_loaders:
+                if not hasattr(self.data_module, 'get_dataloaders'):
+                    raise AttributeError("Data module does not have a 'get_dataloaders' method")
+                self.train_loader, self.val_loader = self.data_module.get_dataloaders(self.model.tokenizer,
+                                                                                      self.batch_size)
+            else:
+                texts, labels = self.data_module.preprocess()
 
-            train_texts, val_texts, train_labels, val_labels = train_test_split(
-                texts, labels, test_size=0.2, random_state=42
-            )
+                train_texts, val_texts, train_labels, val_labels = train_test_split(
+                    texts, labels, test_size=0.2, random_state=42
+                )
 
-            train_encodings = self.model.tokenizer(train_texts, truncation=True, padding=True)
-            val_encodings = self.model.tokenizer(val_texts, truncation=True, padding=True)
+                train_encodings = self.model.tokenizer(train_texts, truncation=True, padding=True,
+                                                       clean_up_tokenization_spaces=True)
+                val_encodings = self.model.tokenizer(val_texts, truncation=True, padding=True,
+                                                     clean_up_tokenization_spaces=True)
 
-            train_dataset = TensorDataset(
-                torch.tensor(train_encodings['input_ids']),
-                torch.tensor(train_encodings['attention_mask']),
-                torch.tensor(train_labels)
-            )
-            val_dataset = TensorDataset(
-                torch.tensor(val_encodings['input_ids']),
-                torch.tensor(val_encodings['attention_mask']),
-                torch.tensor(val_labels)
-            )
+                train_dataset = TensorDataset(
+                    torch.tensor(train_encodings['input_ids']),
+                    torch.tensor(train_encodings['attention_mask']),
+                    torch.tensor(train_labels)
+                )
+                val_dataset = TensorDataset(
+                    torch.tensor(val_encodings['input_ids']),
+                    torch.tensor(val_encodings['attention_mask']),
+                    torch.tensor(val_labels)
+                )
 
-            self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
-            self.val_loader = DataLoader(val_dataset, batch_size=self.batch_size)
+                self.train_loader = DataLoader(train_dataset, batch_size=self.batch_size, shuffle=True)
+                self.val_loader = DataLoader(val_dataset, batch_size=self.batch_size)
 
     def train_epoch(self) -> float:
         self.model.train()
@@ -161,6 +171,70 @@ class Trainer:
 
         return training_history
 
+    def train_on_full_dataset(self, num_epochs: int) -> List[float]:
+        """
+        Train the model on the full dataset (training + validation).
+
+        Args:
+        num_epochs (int): Number of epochs to train for.
+
+        Returns:
+        List[float]: List of average losses for each epoch.
+        """
+        full_train_loader = self.data_module.get_full_train_dataloader(self.model.tokenizer, self.batch_size)
+        epoch_losses = []
+
+        for epoch in range(num_epochs):
+            self.model.train()
+            total_loss = 0
+            progress_bar = tqdm(full_train_loader, desc=f"Full Training Epoch {epoch + 1}/{num_epochs}")
+
+            for batch in progress_bar:
+                input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
+                self.optimizer.zero_grad()
+                outputs = self.model(input_ids, attention_mask)
+                loss = self.loss_fn(outputs, labels)
+                loss.backward()
+                self.optimizer.step()
+                total_loss += loss.item()
+
+                progress_bar.set_postfix({'loss': f'{loss.item():.4f}'})
+
+            avg_loss = total_loss / len(full_train_loader)
+            epoch_losses.append(avg_loss)
+            print(f"Epoch {epoch + 1}/{num_epochs}, Loss: {avg_loss:.4f}")
+
+            # You might want to add learning rate scheduling here if you're using it
+            if self.scheduler:
+                self.scheduler.step(avg_loss)
+
+        return epoch_losses
+
+    def test(self) -> Tuple[float, float, float, float, float]:
+        self.model.eval()
+        total_loss = 0
+        all_preds = []
+        all_labels = []
+
+        # Get the test dataloader
+        test_loader = self.data_module.get_test_dataloader(self.model.tokenizer, self.batch_size)
+
+        progress_bar = tqdm(test_loader, desc="Testing")
+        with torch.no_grad():
+            for batch in progress_bar:
+                input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
+                outputs = self.model(input_ids, attention_mask)
+                loss = self.loss_fn(outputs, labels)
+                total_loss += loss.item()
+                preds = torch.argmax(outputs, dim=1)
+                all_preds.extend(preds.cpu().numpy())
+                all_labels.extend(labels.cpu().numpy())
+                progress_bar.set_postfix({'loss': f'{loss.item():.4f}'})
+
+        accuracy = accuracy_score(all_labels, all_preds)
+        precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_preds, average='weighted')
+        return total_loss / len(test_loader), accuracy, precision, recall, f1
+
     def save_model(self, path: str) -> None:
         torch.save(self.model.state_dict(), path)
         self.logger.info(f"Model saved to {path}")
@@ -220,7 +294,7 @@ if __name__ == "__main__":
     classification_word = "Sentiment"
     model = model_variations["distilbert"]["1_hidden"](classification_word, freeze_encoder=True)
 
-    from data_loaders.wz_loaders.sentiment_imdb import CausalNeutralDataModule
+    from data_loaders.wz_data_loaders.sentiment_imdb import CausalNeutralDataModule
 
     file_path = "outputs/imdb_train_sentiment_analysis.json"
     sentiment_imdb_loader = CausalNeutralDataModule(file_path, classification_word)
