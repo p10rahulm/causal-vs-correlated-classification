@@ -1,0 +1,47 @@
+{
+  "electra_small_discriminator": {
+    "optimizer": "adamw",
+    "hidden_layers": "2_hidden",
+    "learning_rate": 0.001,
+    "epoch": 4,
+    "f1_score": 0.8645070381646851,
+    "accuracy": 0.8769582245430809,
+    "val_loss": 0.31963336328044534
+  },
+  "distilbert": {
+    "optimizer": "adamw",
+    "hidden_layers": "1_hidden",
+    "learning_rate": 0.0005,
+    "epoch": 3,
+    "f1_score": 0.9112808244570095,
+    "accuracy": 0.9131853785900783,
+    "val_loss": 0.244100569980219
+  },
+  "t5": {
+    "optimizer": "adamw",
+    "hidden_layers": "2_hidden",
+    "learning_rate": 0.0005,
+    "epoch": 4,
+    "f1_score": 0.90999908527038,
+    "accuracy": 0.9135117493472585,
+    "val_loss": 0.24422767463450631
+  },
+  "roberta": {
+    "optimizer": "adamw",
+    "hidden_layers": "2_hidden",
+    "learning_rate": 0.0005,
+    "epoch": 5,
+    "f1_score": 0.8895348429820791,
+    "accuracy": 0.8978459530026109,
+    "val_loss": 0.2846613473569353
+  },
+  "bert": {
+    "optimizer": "adamw",
+    "hidden_layers": "2_hidden",
+    "learning_rate": 0.0005,
+    "epoch": 5,
+    "f1_score": 0.9116533013757727,
+    "accuracy": 0.9157963446475196,
+    "val_loss": 0.23435934310934195
+  }
+}
