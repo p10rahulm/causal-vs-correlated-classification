@@ -22,24 +22,12 @@ def prompt_builder(phrases, full_text, classification_word="Sentiment"):
     examples = read_examples_from_file(classification_word)
 
     return textwrap.dedent(f"""
-            You are given the following full text:
-
-            "{full_text}"
-
-            From this text, the following phrases have been extracted:
-
-            {phrases_str}
-
+            From the set of phrases in {phrases_str}, 
             Classify each phrase into one of two categories:
-            "{classification_word}_phrases": Those phrases that are causally influenced by the {classification_word.lower()}.
-            "neutral_phrases": Those phrases that are not causally linked with the {classification_word.lower()}.
-
+            "{classification_word}_phrases": Phrases causally influenced by {classification_word.lower()}.
+            "neutral_phrases": Phrases not causally influenced by {classification_word.lower()}.
             {examples}
-
-            Now, classify the extracted phrases from the given text based on the classification word "{classification_word}":
-
             Output your classification as a JSON object with two keys: "{classification_word.lower()}_phrases" and "neutral_phrases", each containing a list of the corresponding phrases.
-
             IMPORTANT: Your response must be ONLY valid JSON that matches the structure described. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
         """).strip()
 
