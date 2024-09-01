@@ -76,10 +76,8 @@ class Trainer:
                     texts, labels, test_size=0.2, random_state=42
                 )
 
-                train_encodings = self.model.tokenizer(train_texts, truncation=True, padding=True,
-                                                       clean_up_tokenization_spaces=True)
-                val_encodings = self.model.tokenizer(val_texts, truncation=True, padding=True,
-                                                     clean_up_tokenization_spaces=True)
+                train_encodings = self.model.tokenizer(train_texts, truncation=True, padding=True)
+                val_encodings = self.model.tokenizer(val_texts, truncation=True, padding=True)
 
                 train_dataset = TensorDataset(
                     torch.tensor(train_encodings['input_ids']),

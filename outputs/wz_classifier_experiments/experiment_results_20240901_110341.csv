@@ -1,0 +1,1 @@
+model,optimizer,hidden_layers,learning_rate,epoch,train_loss,val_loss,accuracy,precision,recall,f1,best_val_loss,best_accuracy,best_f1

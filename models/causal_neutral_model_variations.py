@@ -48,6 +48,10 @@ def create_deberta_small_model(classification_word, hidden_layers, freeze_encode
     return create_model_with_device("microsoft/deberta-v3-small", classification_word, hidden_layers, freeze_encoder)
 
 
+def create_electra_small_model(classification_word, hidden_layers, freeze_encoder=True):
+    return create_model_with_device("google/electra-small-discriminator", classification_word, hidden_layers, freeze_encoder)
+
+
 # Create variations for each model type
 model_variations = {
     "distilbert": {
@@ -70,10 +74,15 @@ model_variations = {
         "1_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [256], freeze_encoder),
         "2_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [256, 128], freeze_encoder)
     },
-    "deberta": {
+    "deberta_small": {
         "0_hidden": lambda cw, freeze_encoder=True: create_deberta_small_model(cw, [], freeze_encoder),
         "1_hidden": lambda cw, freeze_encoder=True: create_deberta_small_model(cw, [256], freeze_encoder),
         "2_hidden": lambda cw, freeze_encoder=True: create_deberta_small_model(cw, [256, 128], freeze_encoder)
+    },
+    "electra_small_discriminator": {
+        "0_hidden": lambda cw, freeze_encoder=True: create_electra_small_model(cw, [], freeze_encoder),
+        "1_hidden": lambda cw, freeze_encoder=True: create_electra_small_model(cw, [256], freeze_encoder),
+        "2_hidden": lambda cw, freeze_encoder=True: create_electra_small_model(cw, [256, 128], freeze_encoder)
     }
 }
 # Usage example:

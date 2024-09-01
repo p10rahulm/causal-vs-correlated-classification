@@ -21,7 +21,7 @@ from optimizers.optimizer_params import optimizer_configs
 
 def run_experiments():
     # Experiment parameters
-    models = ["distilbert", "xlnet", "bert", "deberta"]
+    models = ["electra_small_discriminator", "distilbert", "t5", "roberta", "bert"]
     optimizers = ["adam", "adamw", "nadam"]
     hidden_layers = ["0_hidden", "1_hidden", "2_hidden"]
     learning_rates = [1e-5, 5e-5, 1e-4, 5e-4, 1e-3]
