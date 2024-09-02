@@ -29,8 +29,7 @@ class Trainer:
     def __init__(self, model: nn.Module, data_module: Union[BaseDataModule, Any], optimizer_name: str = 'adam',
                  dataset_name: str = 'imdb',
                  optimizer_params: Dict[str, Any] = None, batch_size: int = 32,
-                 num_epochs: int = 3, device: Union[str, None] = None, patience: int = 3,
-                 use_datamodule_loaders: bool = False):
+                 num_epochs: int = 3, device: Union[str, None] = None, patience: int = 3):
         self.model = model
         self.data_module = data_module
         self.batch_size = batch_size
@@ -56,7 +55,6 @@ class Trainer:
         self.loss_fn = nn.CrossEntropyLoss()
         self.val_loader = None
         self.train_loader = None
-        self.use_datamodule_loaders = use_datamodule_loaders
 
         # Set up logging
         logging.basicConfig(level=logging.INFO)
@@ -64,9 +62,7 @@ class Trainer:
 
     def prepare_data(self) -> None:
         if self.train_loader is None or self.val_loader is None:
-            if self.use_datamodule_loaders:
-                if not hasattr(self.data_module, 'get_dataloaders'):
-                    raise AttributeError("Data module does not have a 'get_dataloaders' method")
+            if hasattr(self.data_module, 'get_dataloaders'):
                 self.train_loader, self.val_loader = self.data_module.get_dataloaders(self.model.tokenizer,
                                                                                       self.batch_size)
             else:

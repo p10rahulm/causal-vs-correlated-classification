@@ -1,0 +1,20 @@
+{
+  "distilbert": {
+    "optimizer": "adamw",
+    "hidden_layers": "1_hidden",
+    "learning_rate": 0.0001,
+    "epoch": 5,
+    "f1_score": 0.8787843881186104,
+    "accuracy": 0.8788,
+    "val_loss": 0.2980613105624914
+  },
+  "t5": {
+    "optimizer": "adam",
+    "hidden_layers": "0_hidden",
+    "learning_rate": 0.0001,
+    "epoch": 4,
+    "f1_score": 0.6507080580640422,
+    "accuracy": 0.6508,
+    "val_loss": 0.6389127510547638
+  }
+}

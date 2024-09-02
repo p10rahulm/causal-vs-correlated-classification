@@ -62,8 +62,7 @@ def run_experiments():
             # Create and run trainer
             trainer = Trainer(model, data_module, optimizer_name=optimizer_name,
                               optimizer_params=optimizer_config['params'],
-                              batch_size=batch_size, num_epochs=num_epochs,
-                              use_datamodule_loaders=True)
+                              batch_size=batch_size, num_epochs=num_epochs)
 
             # Prepare data before training loop
             trainer.prepare_data()
@@ -121,8 +120,7 @@ def run_experiments():
         # After finding the best model configuration
         best_trainer = Trainer(best_model, data_module, optimizer_name=best_model_config['optimizer_name'],
                                optimizer_params=optimizer_config['params'],
-                               batch_size=batch_size, num_epochs=num_epochs,
-                               use_datamodule_loaders=True)
+                               batch_size=batch_size, num_epochs=num_epochs)
 
         print("Training best model on full dataset...")
         epoch_losses = best_trainer.train_on_full_dataset(num_epochs)

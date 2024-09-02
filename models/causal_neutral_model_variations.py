@@ -24,9 +24,9 @@ def create_bert_model(classification_word, hidden_layers, freeze_encoder=True):
     return create_model_with_device("bert-base-uncased", classification_word, hidden_layers, freeze_encoder)
 
 
-def create_t5_model(classification_word, hidden_layers, freeze_encoder=True):
+def create_t5_model(classification_word, hidden_layers, freeze_encoder=True, model_name="t5-base"):
     try:
-        model_name = "t5-small"  # You can change this to other T5 variants if needed
+        model_name = model_name
         t5_encoder = T5EncoderModel.from_pretrained(model_name)
         tokenizer = T5Tokenizer.from_pretrained(model_name)
 
@@ -49,7 +49,24 @@ def create_deberta_small_model(classification_word, hidden_layers, freeze_encode
 
 
 def create_electra_small_model(classification_word, hidden_layers, freeze_encoder=True):
-    return create_model_with_device("google/electra-small-discriminator", classification_word, hidden_layers, freeze_encoder)
+    return create_model_with_device("google/electra-small-discriminator", classification_word, hidden_layers,
+                                    freeze_encoder)
+
+
+def create_albert_model(classification_word, hidden_layers, freeze_encoder=True):
+    return create_model_with_device("albert-base-v2", classification_word, hidden_layers, freeze_encoder)
+
+
+def create_deberta_model(classification_word, hidden_layers, freeze_encoder=True):
+    return create_model_with_device("microsoft/deberta-base", classification_word, hidden_layers, freeze_encoder)
+
+
+def create_bart_model(classification_word, hidden_layers, freeze_encoder=True):
+    return create_model_with_device("facebook/bart-base", classification_word, hidden_layers, freeze_encoder)
+
+
+def create_xlnet_model(classification_word, hidden_layers, freeze_encoder=True):
+    return create_model_with_device("xlnet-base-cased", classification_word, hidden_layers, freeze_encoder)
 
 
 # Create variations for each model type
@@ -70,9 +87,14 @@ model_variations = {
         "2_hidden": lambda cw, freeze_encoder=True: create_bert_model(cw, [256, 128], freeze_encoder)
     },
     "t5": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [256, 128], freeze_encoder)
+        "0_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [], freeze_encoder, "t5-small"),
+        "1_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [256], freeze_encoder, "t5-small"),
+        "2_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [256, 128], freeze_encoder, "t5-small")
+    },
+    "t5_base": {
+        "0_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [], freeze_encoder, "t5-base"),
+        "1_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [256], freeze_encoder, "t5-base"),
+        "2_hidden": lambda cw, freeze_encoder=True: create_t5_model(cw, [256, 128], freeze_encoder, "t5-base")
     },
     "deberta_small": {
         "0_hidden": lambda cw, freeze_encoder=True: create_deberta_small_model(cw, [], freeze_encoder),
@@ -83,6 +105,26 @@ model_variations = {
         "0_hidden": lambda cw, freeze_encoder=True: create_electra_small_model(cw, [], freeze_encoder),
         "1_hidden": lambda cw, freeze_encoder=True: create_electra_small_model(cw, [256], freeze_encoder),
         "2_hidden": lambda cw, freeze_encoder=True: create_electra_small_model(cw, [256, 128], freeze_encoder)
+    },
+    "albert": {
+        "0_hidden": lambda cw, freeze_encoder=True: create_albert_model(cw, [], freeze_encoder),
+        "1_hidden": lambda cw, freeze_encoder=True: create_albert_model(cw, [256], freeze_encoder),
+        "2_hidden": lambda cw, freeze_encoder=True: create_albert_model(cw, [256, 128], freeze_encoder)
+    },
+    "deberta": {
+        "0_hidden": lambda cw, freeze_encoder=True: create_deberta_model(cw, [], freeze_encoder),
+        "1_hidden": lambda cw, freeze_encoder=True: create_deberta_model(cw, [256], freeze_encoder),
+        "2_hidden": lambda cw, freeze_encoder=True: create_deberta_model(cw, [256, 128], freeze_encoder)
+    },
+    "bart": {
+        "0_hidden": lambda cw, freeze_encoder=True: create_bart_model(cw, [], freeze_encoder),
+        "1_hidden": lambda cw, freeze_encoder=True: create_bart_model(cw, [256], freeze_encoder),
+        "2_hidden": lambda cw, freeze_encoder=True: create_bart_model(cw, [256, 128], freeze_encoder)
+    },
+    "xlnet": {
+        "0_hidden": lambda cw, freeze_encoder=True: create_xlnet_model(cw, [], freeze_encoder),
+        "1_hidden": lambda cw, freeze_encoder=True: create_xlnet_model(cw, [256], freeze_encoder),
+        "2_hidden": lambda cw, freeze_encoder=True: create_xlnet_model(cw, [256, 128], freeze_encoder)
     }
 }
 # Usage example:

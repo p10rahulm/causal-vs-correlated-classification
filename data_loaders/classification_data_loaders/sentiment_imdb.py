@@ -60,7 +60,7 @@ class IMDBDataModule(BaseDataModule):
         test_texts = self.test_dataset['text']
         test_labels = self.test_dataset['label']
 
-        test_encodings = tokenizer(test_texts, truncation=True, padding=True, clean_up_tokenization_spaces=True)
+        test_encodings = tokenizer(test_texts, truncation=True, padding=True)
 
         test_dataset = TensorDataset(
             torch.tensor(test_encodings['input_ids']),
@@ -78,8 +78,7 @@ class IMDBDataModule(BaseDataModule):
                             [self.val_dataset[i]['label'] for i in range(len(self.val_dataset))]
 
         # Tokenize the full training set
-        full_train_encodings = tokenizer(full_train_texts, truncation=True, padding=True,
-                                         clean_up_tokenization_spaces=True)
+        full_train_encodings = tokenizer(full_train_texts, truncation=True, padding=True)
 
         # Create a TensorDataset
         full_train_dataset = TensorDataset(
