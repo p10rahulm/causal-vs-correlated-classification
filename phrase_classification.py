@@ -3,7 +3,7 @@ import json
 import textwrap
 from data_loaders.imdb import get_imdb_train_samples, get_imdb_test_samples
 from phrase_extraction import remove_punctuation_phrases, extract_phrases
-
+import sys
 
 def read_examples_from_file(classification_word):
     file_path = f"prompt_templates/wz_classification/{classification_word.lower()}.txt"
@@ -20,7 +20,7 @@ def read_examples_from_file(classification_word):
 def prompt_builder(phrases, full_text, classification_word="Sentiment"):
     phrases_str = ", ".join(f'"{phrase}"' for phrase in phrases)
     examples = read_examples_from_file(classification_word)
-
+    
     return textwrap.dedent(f"""
             You are given the following full text:
 
@@ -73,7 +73,7 @@ def process_texts(texts, labels, classification_word="Sentiment", num_samples=No
 def main():
     # Process a subset of the training dataset
     set_seed(42)
-    num_examples = 100
+    num_examples = 1
     train_texts, train_labels = get_imdb_train_samples(n=num_examples)
     classification_word = "Sentiment"  # This can be changed to any other word
     output_file = f'outputs/imdb_train_{classification_word.lower()}_analysis.json'

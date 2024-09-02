@@ -22,7 +22,27 @@ def get_api_key():
         print("Error: Unable to read _claude_key.txt file.")
         return None
 
+def get_claude_pre_prompt(prompt, max_retries = 5):
+    api_key = get_api_key()
+    if not api_key:
+        return None
 
+    client = anthropic.Anthropic(api_key=api_key)
+    for attempt in range(max_retries):
+        try:
+            response = client.messages.create(
+                model="claude-3-5-sonnet-20240620",
+                max_tokens=4096,
+                messages=[
+                    {"role": "user", "content": prompt}
+                ]
+            )
+
+            response_text = response.content[0].text
+            return response_text
+        except:
+            pass
+        
 def get_claude_response(prompt, max_retries=5):
     api_key = get_api_key()
     if not api_key:
