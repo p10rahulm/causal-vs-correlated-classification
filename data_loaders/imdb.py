@@ -4,7 +4,6 @@ from datasets import load_dataset
 import numpy as np
 import random
 
-
 def get_imdb_samples(split='train', n=None, batch_size=None, shuffle=True):
     """
     Load IMDB dataset samples.
@@ -20,7 +19,7 @@ def get_imdb_samples(split='train', n=None, batch_size=None, shuffle=True):
     - If batch_size is provided: iterator yielding tuples (reviews, labels) of size batch_size
     """
     dataset = load_dataset("imdb", split=split)
-
+    
     if n is not None:
         if shuffle:
             indices = random.sample(range(len(dataset)), min(n, len(dataset)))
@@ -29,10 +28,10 @@ def get_imdb_samples(split='train', n=None, batch_size=None, shuffle=True):
         dataset = dataset.select(indices)
     elif shuffle:
         dataset = dataset.shuffle()
-
+    
     reviews = dataset['text']
     labels = dataset['label']
-
+    
     if batch_size is None:
         return reviews, labels
     else:
