@@ -184,7 +184,12 @@ class Trainer:
             progress_bar = tqdm(full_train_loader, desc=f"Full Training Epoch {epoch + 1}/{num_epochs}")
 
             for batch in progress_bar:
-                input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
+                if isinstance(batch, dict):
+                    input_ids = batch['input_ids'].to(self.device)
+                    attention_mask = batch['attention_mask'].to(self.device)
+                    labels = batch['labels'].to(self.device)
+                else:
+                    input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
                 self.optimizer.zero_grad()
                 outputs = self.model(input_ids, attention_mask)
                 loss = self.loss_fn(outputs, labels)
