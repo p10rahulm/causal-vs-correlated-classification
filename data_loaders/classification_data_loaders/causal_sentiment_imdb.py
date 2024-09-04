@@ -9,17 +9,40 @@ class CausalPhraseDataset(Dataset):
         self.dataset = dataset
         self.causal_neutral_model = causal_neutral_model
         self.tokenizer = tokenizer
+        self.debug_mode = False
 
     def __len__(self):
         return len(self.dataset)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx, debug=False):
+        debug = self.debug_mode
         item = self.dataset[idx]
         review, label = item['text'], item['label']
+        if debug:
+            print(f"Processing review {idx}: {review[:50]}...")  # Print first 50 chars of the review
+
         phrases = remove_punctuation_phrases(extract_phrases(review))
+
         classifications = self.classify_phrases(phrases)
         causal_phrases = [phrase for phrase, cls in zip(phrases, classifications) if cls == 1]
-        return ' '.join(causal_phrases), label
+        if debug:
+            print(f"Found {len(causal_phrases)} causal phrases out of {len(phrases)} phrases")
+
+        if not causal_phrases:
+            if debug:
+                print("No causal phrases found. Using fallback strategy.")
+            sentences = review.split('.')
+            if sentences:
+                causal_phrases = [sentences[0].strip()]
+            else:
+                words = review.split()
+                causal_phrases = [' '.join(words[:50])]
+
+        result = ' '.join(causal_phrases)
+        if debug:
+            print(f"Final result: {result[:50]}...")  # Print first 50 chars of the result
+
+        return result, label
 
     def classify_phrases(self, phrases):
         inputs = self.tokenizer(phrases, truncation=True, padding=True, return_tensors="pt")
@@ -34,6 +57,9 @@ class CausalPhraseDataset(Dataset):
             predictions = torch.argmax(logits, dim=1)
 
         return predictions.cpu().numpy()
+
+    def set_debug_mode(self, mode):
+        self.debug_mode = mode
 
 
 class CausalPhraseIMDBDataModule(IMDBDataModule):
@@ -52,6 +78,9 @@ class CausalPhraseIMDBDataModule(IMDBDataModule):
 
         train_dataset = CausalPhraseDataset(self.train_dataset, self.causal_neutral_model, self.tokenizer)
         val_dataset = CausalPhraseDataset(self.val_dataset, self.causal_neutral_model, self.tokenizer)
+
+        print(f"Train dataset size: {len(train_dataset)}")
+        print(f"Validation dataset size: {len(val_dataset)}")
 
         def collate_fn(batch):
             texts, labels = zip(*batch)

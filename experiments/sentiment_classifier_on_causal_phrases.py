@@ -42,6 +42,7 @@ def run_causal_phrase_sentiment_experiment():
 
     # Experiment parameters
     models = ["electra_small_discriminator", "distilbert", "t5", "roberta", "bert", "albert"]
+    models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
     classification_word = "Sentiment"
     epochs = [5, 10]
     batch_size = 32

@@ -94,7 +94,12 @@ class Trainer:
         total_loss = 0
         progress_bar = tqdm(self.train_loader, desc="Training")
         for batch in progress_bar:
-            input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
+            if isinstance(batch, dict):
+                input_ids = batch['input_ids'].to(self.device)
+                attention_mask = batch['attention_mask'].to(self.device)
+                labels = batch['labels'].to(self.device)
+            else:
+                input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
             self.optimizer.zero_grad()
             outputs = self.model(input_ids, attention_mask)
             loss = self.loss_fn(outputs, labels)
@@ -221,7 +226,12 @@ class Trainer:
         progress_bar = tqdm(test_loader, desc="Testing")
         with torch.no_grad():
             for batch in progress_bar:
-                input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
+                if isinstance(batch, dict):
+                    input_ids = batch['input_ids'].to(self.device)
+                    attention_mask = batch['attention_mask'].to(self.device)
+                    labels = batch['labels'].to(self.device)
+                else:
+                    input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
                 outputs = self.model(input_ids, attention_mask)
                 loss = self.loss_fn(outputs, labels)
                 total_loss += loss.item()
