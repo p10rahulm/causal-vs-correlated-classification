@@ -45,9 +45,7 @@ def main():
         counterfactual_genres.append(cf_genre)
         counterfactual_embeddings.append(cf_embed)
     
-    counterfactual_genres = torch.stack(counterfactual_genres, dim=0)
-    counterfactual_embeddings = torch.stack(counterfactual_embeddings, dim=0)
     
-    print(counterfactual_genres.shape, counterfactual_embeddings.shape)
+    print(len(counterfactual_genres), len(counterfactual_embeddings))
 if __name__ == "__main__":
     main()
