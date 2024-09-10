@@ -37,9 +37,17 @@ def main():
     
     genre_dict = {}
     for i in  range(len(data['imdbGenres'])):
-        genre_dict[data['imdbGenres'][i]] = genre_stacked_embeds[i]
+        genre_dict[data['imdbGenres'][i]] = genre_stacked_embeds[i].detach().numpy()
 
-    print(sentence_stacked_embeds.shape, genre_stacked_embeds.shape)
+    counterfactual_embeddings, counterfactual_genres = [], []
+    for sentence in sentence_stacked_embeds:
+        cf_genre, cf_embed = counterfactual_by_genre(sentence.detach().numpy(), genre_dict) 
+        counterfactual_genres.append(cf_genre)
+        counterfactual_embeddings.append(cf_embed)
     
+    counterfactual_genres = torch.stack(counterfactual_genres, dim=0)
+    counterfactual_embeddings = torch.stack(counterfactual_embeddings, dim=0)
+    
+    print(counterfactual_genres.shape, counterfactual_embeddings.shape)
 if __name__ == "__main__":
     main()
