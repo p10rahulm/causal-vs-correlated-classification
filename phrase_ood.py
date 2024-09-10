@@ -7,6 +7,7 @@ import sys
 from phrase_classification import prompt_builder
 import pandas as pd
 from random import randrange
+from transformers import T5Tokenizer, T5ForConditionalGeneration
 
 def pre_prompt_builder(full_text, label, classification_word="Sentiment", all_labels = None):
     if all_labels is None:

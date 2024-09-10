@@ -13,9 +13,9 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 from torch.utils.data import DataLoader, Dataset
 import torch.optim as optim
 
-import matplotlib
+# import matplotlib
 
-matplotlib.style.use('ggplot')
+# matplotlib.style.use('ggplot')
 
 from models.binary_head import MultiHeadBinaryModel
 
@@ -87,11 +87,11 @@ def fetch_data(preprocess=True):
     return data, w_z
 
 
-def tokenize(data, max_source_length=512, ret_choice='input_ids'):
+def tokenize(data, max_source_length=512, ret_choice='input_ids', col = 'Text'):
     tokenizer = T5Tokenizer.from_pretrained("t5-base", max_source_length=512)
 
     TokenizerEncoding = tokenizer(
-        data['Text'].tolist(),
+        data[col].tolist(),
         padding="longest",
         max_length=max_source_length,
         truncation=True,
