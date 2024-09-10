@@ -63,8 +63,8 @@ class Trainer:
     def prepare_data(self) -> None:
         if self.train_loader is None or self.val_loader is None:
             if hasattr(self.data_module, 'get_dataloaders'):
-                self.train_loader, self.val_loader = self.data_module.get_dataloaders(self.model.tokenizer,
-                                                                                      self.batch_size)
+                # self.train_loader, self.val_loader = self.data_module.get_dataloaders(self.model.tokenizer, self.batch_size)
+                self.train_loader, self.val_loader = self.data_module.get_dataloaders(self.batch_size)
             else:
                 texts, labels = self.data_module.preprocess()
 
