@@ -33,10 +33,11 @@ class RegularizedTrainer(Trainer):
         probs_causal = causal_probs
 
         # Compute regularizer
-        reg_pos = probs_theta[:, 1] - probs_theta[:, 1] * (probs_eta[:, 1] / probs_causal[:, 1])
-        reg_neg = probs_theta[:, 0] - probs_theta[:, 0] * (probs_eta[:, 0] / probs_causal[:, 0])
+        reg_pos = torch.abs(probs_theta[:, 1] - probs_theta[:, 1] * (probs_eta[:, 1] / probs_causal[:, 1]))
+        reg_neg = torch.abs(probs_theta[:, 0] - probs_theta[:, 0] * (probs_eta[:, 0] / probs_causal[:, 0]))
 
-        regularizer = torch.where(labels == 1, reg_pos, reg_neg).mean()
+        regularizer_vector = torch.where(labels == 1, reg_pos, reg_neg)
+        regularizer = torch.norm(regularizer_vector, p=2)
 
         return regularizer
 

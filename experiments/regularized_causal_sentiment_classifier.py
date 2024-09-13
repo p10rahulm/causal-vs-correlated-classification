@@ -41,7 +41,8 @@ def run_regularized_imdb_experiment():
         return
 
     # Experiment parameters
-    models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
+    # models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
+    models = ["t5"]
     epochs = [5, 10]
     classification_word = "Sentiment"
     batch_size = 32
@@ -91,6 +92,7 @@ def run_regularized_imdb_experiment():
                     # Initialize the IMDBDataModule
                     data_module = CausalPhraseWithOriginalIMDBDataModule()
                     data_module.set_models(causal_neutral_model, model_eta)
+
 
                     # Update optimizer config
                     optimizer_config = optimizer_configs[optimizer_name].copy()
