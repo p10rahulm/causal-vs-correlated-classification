@@ -43,7 +43,7 @@ def get_claude_pre_prompt(prompt, max_retries = 5):
         except:
             pass
         
-def get_claude_response(prompt, max_retries=5):
+def get_claude_response(prompt, max_retries=5, mode = None):
     api_key = get_api_key()
     if not api_key:
         return None
@@ -61,6 +61,8 @@ def get_claude_response(prompt, max_retries=5):
             )
 
             response_text = response.content[0].text
+            if mode == 'ood':
+                return response_text
             # Find the first occurrence of '{' or '['
             json_start = min(response_text.find('{'), response_text.find('['))
             if json_start != -1:
