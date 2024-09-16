@@ -41,7 +41,7 @@ def run_regularized_imdb_experiment():
         return
 
     # Experiment parameters
-    # models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
+    models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
     models = ["t5"]
     epochs = [5, 10]
     classification_word = "Sentiment"
@@ -90,7 +90,7 @@ def run_regularized_imdb_experiment():
                     model_theta.load_state_dict(model_eta.state_dict())
 
                     # Initialize the IMDBDataModule
-                    data_module = CausalPhraseWithOriginalIMDBDataModule()
+                    data_module = CausalPhraseWithOriginalIMDBDataModule(batch_size=batch_size)
                     data_module.set_models(causal_neutral_model, model_eta)
 
 

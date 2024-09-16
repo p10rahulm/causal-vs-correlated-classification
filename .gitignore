@@ -6,6 +6,7 @@
 input/
 trained_models
 
+.vscode/
 .idea/
 _claude_key.txt
 

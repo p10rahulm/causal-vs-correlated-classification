@@ -22,6 +22,35 @@ class RegularizedTrainer(Trainer):
         original_attention_mask = batch['original_attention_mask'].to(self.device)
         causal_probs = batch['causal_probs'].to(self.device)
         eta_probs = batch['eta_probs'].to(self.device)
+
+        # Compute P_θ(y|s) using original reviews
+        outputs_theta = self.model_theta(original_input_ids, original_attention_mask)
+        probs_theta = F.softmax(outputs_theta.logits if hasattr(outputs_theta, 'logits') else outputs_theta, dim=1)
+
+        # Calculate overall expectation (mean over all classes)
+        overall_expectation = probs_theta.mean()
+
+        # Number of classes
+        num_classes = probs_theta.shape[1]
+
+        # Compute regularization terms for each class
+        reg_terms = []
+        for i in range(num_classes):
+            second_term = probs_theta[:, i] * (eta_probs[:, i] / causal_probs[:, i])
+            second_term_mean = second_term.mean()
+            reg_term = overall_expectation - second_term_mean
+            reg_terms.append(reg_term)
+
+        # Compute the 2-norm of the regularization terms
+        regularizer = torch.norm(torch.tensor(reg_terms), p=2)
+
+        return regularizer
+
+    def compute_regularizer_old(self, batch: Dict[str, torch.Tensor]) -> torch.Tensor:
+        original_input_ids = batch['original_input_ids'].to(self.device)
+        original_attention_mask = batch['original_attention_mask'].to(self.device)
+        causal_probs = batch['causal_probs'].to(self.device)
+        eta_probs = batch['eta_probs'].to(self.device)
         labels = batch['labels'].to(self.device)
 
         # Compute P_θ(y|s) using original reviews
@@ -91,7 +120,7 @@ class RegularizedTrainer(Trainer):
     def train(self, full_dataset=False) -> List[dict]:
         # Override the train method to use train_with_regularization
         return self.train_with_regularization(full_dataset=full_dataset)
-
+  
     def test(self) -> Tuple[float, float, float, float, float]:
         self.model_theta.eval()
         total_loss = 0
@@ -102,11 +131,11 @@ class RegularizedTrainer(Trainer):
 
         with torch.no_grad():
             for batch in tqdm(test_loader, desc="Testing"):
-                original_input_ids = batch['original_input_ids'].to(self.device)
-                original_attention_mask = batch['original_attention_mask'].to(self.device)
+                input_ids = batch['input_ids'].to(self.device)
+                attention_mask = batch['attention_mask'].to(self.device)
                 labels = batch['labels'].to(self.device)
 
-                outputs = self.model_theta(original_input_ids, original_attention_mask)
+                outputs = self.model_theta(input_ids, attention_mask)
                 logits = outputs.logits if hasattr(outputs, 'logits') else outputs
                 loss = self.loss_fn(logits, labels)
                 total_loss += loss.item()

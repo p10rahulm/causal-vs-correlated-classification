@@ -1,0 +1,2 @@
+model,original_epochs,regularized_epochs,final_loss,test_loss,test_accuracy,test_precision,test_recall,test_f1
+distilbert,5,5,0.18014549623574594,0.3288086346943703,0.8592,0.8593855142274275,0.8592,0.8591818274711626

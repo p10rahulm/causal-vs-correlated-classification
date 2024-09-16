@@ -9,7 +9,7 @@ class T5ForClassification(nn.Module):
         self.classification_word = classification_word
         self.tokenizer = tokenizer
         self.num_hidden_layers = len(hidden_layers)  # Add this line
-
+        self.model_name = "t5-small"
         # Create classifier
         layers = []
         in_features = t5_encoder.config.d_model
