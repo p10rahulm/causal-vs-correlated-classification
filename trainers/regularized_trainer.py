@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple
 
 class RegularizedTrainer(Trainer):
     def __init__(self, model_eta, model_theta, data_module,
-                 optimizer_name='adamw', dataset_name='imdb', optimizer_params=None,
+                optimizer_name='adamw', dataset_name='imdb', optimizer_params=None,
                  batch_size=32, num_epochs=3, device=None, lambda_reg=0.1, **kwargs):
         super().__init__(model_theta, data_module, optimizer_name, dataset_name,
                          optimizer_params, batch_size, num_epochs, device, **kwargs)
