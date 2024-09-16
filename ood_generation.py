@@ -17,7 +17,7 @@ from phrase_extraction import remove_punctuation_phrases, extract_phrases
 from phrase_classification import prompt_builder
 
 def get_cf_data(texts, labels, cf_labels = None, ood_mode = 'genre'):
-    for i in range(len(texts)): 
+    for i in tqdm(range(len(texts))): 
         if ood_mode == 'genre':
             prompt =  textwrap.dedent(f"""
                     You are given the following full film review:
@@ -26,7 +26,8 @@ def get_cf_data(texts, labels, cf_labels = None, ood_mode = 'genre'):
                     {labels[i]}
                     Change the given film review in a manner such that its genre is changed to the following counterfactual instead:
                     {' , '.join(cf_labels[i])}
-                    Provide the output as a CSV row with the film review in the first column and the counterfactual genres in the other.
+                    Provide the output as a CSV row with the film review in the first column, the counterfactual genres in the second column, 
+                    and the sentiment of the new review in the third column (Positive or Negative).
                     The columns must be separated using '|'. The different counterfactual genres should be separated by a ',' with '"' around each genre name. 
                     As in {labels[i]}. Do not print anything else.
                     IMPORTANT : Please keep all non-genre words as close to the original as possible. Please keep the sentiment the same.
@@ -34,7 +35,7 @@ def get_cf_data(texts, labels, cf_labels = None, ood_mode = 'genre'):
             response = get_claude_response(prompt, mode='ood')
             with open('data/ood_genres.csv', 'a') as file:
                 if i == 0:
-                    file.write('CF_Rev_Genres | CF_Genres \n')
+                    file.write('CF_Rev_Genres | CF_Genres | CF_Sentiment\n')
                 file.write(response + '\n')
         
         elif ood_mode == 'sentiment':
@@ -50,10 +51,7 @@ def get_cf_data(texts, labels, cf_labels = None, ood_mode = 'genre'):
                     Do not print anything else.
                     IMPORTANT : Please keep all non-sentiment words as close to the original as possible.
                 """).strip()
-            print(prompt)
-            print()
             response = get_claude_response(prompt, mode='ood')
-            print(response)
             with open('data/ood_sentiments.csv', 'a') as file:
                 if i == 0:
                     file.write('CF_Rev_Sentiment | CF_Sentiment \n')
@@ -107,7 +105,7 @@ def main():
     stacked_embeds = torch.stack(embeddings, dim=0)
     sentence_stacked_embeds = torch.mean(stacked_embeds, dim=1)
     
-    ood_mode = 'sentiment'
+    ood_mode = 'genre'
     
     if ood_mode == 'genre':
         unique_labels = data['imdbGenres'].str.split(',').explode().unique()
