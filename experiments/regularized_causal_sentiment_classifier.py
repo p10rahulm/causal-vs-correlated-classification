@@ -42,18 +42,17 @@ def run_regularized_imdb_experiment():
 
     # Experiment parameters
     models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
-    models = ["albert"]
     
-    epochs = [10]
+    epochs = [5, 10]
     classification_word = "Sentiment"
-    batch_size = 32
-    num_epochs = 5  # for regularization training
+    batch_size = 1024
+    num_epochs = 10  # for regularization training
     lambda_reg = 0.1
 
     # Hyperparameters
     optimizer_name = "adamw"
     hidden_layer = "1_hidden"
-    learning_rate = 0.0001
+    learning_rate = 0.001
 
     # Prepare results file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
