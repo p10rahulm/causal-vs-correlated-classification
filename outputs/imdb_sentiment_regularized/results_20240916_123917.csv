@@ -1,0 +1,2 @@
+model,original_epochs,regularized_epochs,final_loss,test_loss,test_accuracy,test_precision,test_recall,test_f1
+roberta,5,5,0.10453558676516461,0.3294354542575376,0.87636,0.876414928875477,0.87636,0.8763554892504166

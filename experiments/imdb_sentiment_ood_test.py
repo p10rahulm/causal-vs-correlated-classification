@@ -92,12 +92,12 @@ def run_ood_sentiment_test():
 
     # Dataset configurations
     datasets = [
-        # {
-        #     'name': 'CF Test Ltd Paper',
-        #     'file': 'data/cf_test_ltd_paper.csv',
-        #     'text_column': 'Text',
-        #     'sentiment_column': 'Sentiment'
-        # },
+        {
+            'name': 'CF Test Ltd Paper',
+            'file': 'data/cf_test_ltd_paper.csv',
+            'text_column': 'Text',
+            'sentiment_column': 'Sentiment'
+        },
         {
             'name': 'OOD Sentiment',
             'file': 'data/ood_sentiments.csv',
