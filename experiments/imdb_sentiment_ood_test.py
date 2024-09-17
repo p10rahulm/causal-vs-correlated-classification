@@ -11,6 +11,8 @@ sys.path.insert(0, str(project_root))
 
 import torch
 import csv
+import re
+import unicodedata
 from datetime import datetime
 import logging
 import pandas as pd
@@ -32,8 +34,10 @@ sys.path.insert(0, str(project_root))
 
 
 class SentimentDataset(Dataset):
-    def __init__(self, csv_file, tokenizer, text_column, sentiment_column, max_length=512):
-        self.data = pd.read_csv(csv_file, sep='|', skiprows=1, names=[text_column, sentiment_column])
+    def __init__(self, csv_file, tokenizer, text_column, sentiment_column, column_names=None, max_length=512):
+        if column_names is None:
+            column_names = [text_column, sentiment_column]
+        self.data = pd.read_csv(csv_file, sep='|', skiprows=1, names=column_names)
         self.tokenizer = tokenizer
         self.max_length = max_length
         self.text_column = text_column
@@ -42,8 +46,16 @@ class SentimentDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
+    def clean_text(self, text):
+        # Remove non-ASCII characters
+        text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('ascii')
+        # Remove extra whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        return text
+    
     def __getitem__(self, idx):
         text = str(self.data.iloc[idx][self.text_column])
+        text = self.clean_text(text)
         sentiment = self.data.iloc[idx][self.sentiment_column]
         
         # Convert sentiment to string and handle potential NaN values
@@ -92,6 +104,12 @@ def run_ood_sentiment_test():
 
     # Dataset configurations
     datasets = [
+        {
+            'name': 'OOD Genres',
+            'file': 'data/ood_genres.csv',
+            'text_column': 'CF_Rev_Genres',
+            'sentiment_column': 'CF_Sentiment'
+        },
         {
             'name': 'OOD Sentiment',
             'file': 'data/ood_sentiments.csv',
