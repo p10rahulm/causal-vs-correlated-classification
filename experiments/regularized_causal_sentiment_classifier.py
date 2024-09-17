@@ -42,8 +42,9 @@ def run_regularized_imdb_experiment():
 
     # Experiment parameters
     models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
-    models = ["t5"]
-    epochs = [5, 10]
+    models = ["albert"]
+    
+    epochs = [10]
     classification_word = "Sentiment"
     batch_size = 32
     num_epochs = 5  # for regularization training
