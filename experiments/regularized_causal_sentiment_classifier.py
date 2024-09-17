@@ -15,7 +15,8 @@ import logging
 from data_loaders.classification_data_loaders.causal_original_sentiment_imdb import \
     CausalPhraseWithOriginalIMDBDataModule
 from models.causal_neutral_model_variations import model_variations
-from trainers.regularized_trainer import RegularizedTrainer
+# from trainers.regularized_trainer import RegularizedTrainer
+from trainers.regularized_classification_trainer import RegularizedTrainer
 from trainers.trainer import save_trained_model
 from optimizers.optimizer_params import optimizer_configs
 from models.model_utilities import load_trained_model, find_model_file
@@ -42,6 +43,7 @@ def run_regularized_imdb_experiment():
 
     # Experiment parameters
     models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
+    models = ["roberta"]
     
     epochs = [5, 10]
     classification_word = "Sentiment"
