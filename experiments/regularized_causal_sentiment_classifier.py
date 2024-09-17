@@ -54,7 +54,7 @@ def run_regularized_imdb_experiment():
     # Hyperparameters
     optimizer_name = "adamw"
     hidden_layer = "1_hidden"
-    learning_rate = 0.001
+    learning_rate = 0.0005
 
     # Prepare results file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -71,7 +71,7 @@ def run_regularized_imdb_experiment():
         for model_name in models:
             for original_epochs in epochs:
                 try:
-                    logging.info(f"Running experiment: {model_name}, original_epochs={original_epochs}, lambda_reg={lambda_reg}")
+                    logging.info(f"Loading Data for experiment: {model_name}, original_epochs={original_epochs}")
 
                     # Load the trained model from Baseline 1 (P_η)
                     model_eta_path = find_model_file(
@@ -103,6 +103,8 @@ def run_regularized_imdb_experiment():
                     
                     for lambda_reg in lambda_values:
                         try:
+                            logging.info(f"Running experiment: {model_name}, original_epochs={original_epochs}, lambda_reg={lambda_reg}")
+
                             # Create RegularizedTrainer
                             trainer = RegularizedTrainer(
                                 model_eta=model_eta,
@@ -156,7 +158,7 @@ def run_regularized_imdb_experiment():
                                 torch.cuda.empty_cache()
                 except Exception as e:
                     logging.error(f"Error processing {model_name} with {original_epochs} epochs: {e}")
-                    
+
     logging.info(f"Experiment completed. Results saved to {results_file}")
 
 

@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from tqdm import tqdm
 from trainers.trainer import Trainer

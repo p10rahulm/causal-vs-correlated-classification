@@ -6,6 +6,8 @@
 input/
 trained_models
 
+logs/regularized_training/
+
 .vscode/
 .idea/
 _claude_key.txt
@@ -272,3 +274,5 @@ cython_debug/
 #.idea/
 
 "_claude_key.txt" 
+logs/regularized_training/2024-09-17-08-10-03.txt
+logs/regularized_training/2024-09-17-08-10-03.txt
