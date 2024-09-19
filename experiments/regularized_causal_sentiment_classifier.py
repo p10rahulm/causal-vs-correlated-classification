@@ -43,13 +43,13 @@ def run_regularized_imdb_experiment():
 
     # Experiment parameters
     models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
-    models = ["roberta"]
+    
     
     epochs = [5, 10]
     classification_word = "Sentiment"
-    batch_size = 32
-    num_epochs = 5  # for regularization training
-    lambda_values = [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1]
+    batch_size = 256
+    num_epochs = 10  # for regularization training
+    lambda_values = [0.0,0.01,0.025,0.05,0.1,0.25,0.5,1]
 
     # Hyperparameters
     optimizer_name = "adamw"

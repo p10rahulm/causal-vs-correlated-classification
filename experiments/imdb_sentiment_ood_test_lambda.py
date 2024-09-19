@@ -18,21 +18,21 @@ import logging
 import pandas as pd
 import torch
 import torch.nn.functional as F
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
 from models.causal_neutral_model_variations import model_variations
 from models.model_utilities import load_trained_model, find_model_file
-
+from data_loaders.sentiment_dataset_test import SentimentDataset
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Add project root to system path
-project_root = Path(__file__).resolve().parent
-while not (project_root / '.git').exists() and project_root != project_root.parent:
-    project_root = project_root.parent
-sys.path.insert(0, str(project_root))
 
-from data_loaders.sentiment_dataset_test import SentimentDataset
+# This is a set of tests on models which are of lambda 0..01 to 1
+
+
+from datetime import datetime
+from sklearn.metrics import precision_recall_fscore_support
+
 
 
 def run_ood_sentiment_test():
@@ -40,9 +40,9 @@ def run_ood_sentiment_test():
     logging.info(f"Using device: {device}")
 
     # Experiment parameters
-    models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
+    model_name = "roberta"
     original_epochs = [5, 10]
-    run_types = ['sentiment_naive_baseline', 'regularized', 'causal_phrases']
+    lambda_values = [0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1]
     classification_word = "Sentiment"
     batch_size = 32
     hidden_layer = "1_hidden"
@@ -50,15 +50,15 @@ def run_ood_sentiment_test():
     # Dataset configurations
     datasets = [
         {
-            'name': 'OOD Genres',
-            'file': 'data/ood_genres.csv',
-            'text_column': 'CF_Rev_Genres',
-            'sentiment_column': 'CF_Sentiment'
-        },
-        {
             'name': 'OOD Sentiment',
             'file': 'data/ood_sentiments_test.csv',
             'text_column': 'CF_Rev_Sentiment',
+            'sentiment_column': 'CF_Sentiment'
+        },
+        {
+            'name': 'OOD Genres',
+            'file': 'data/ood_genres.csv',
+            'text_column': 'CF_Rev_Genres',
             'sentiment_column': 'CF_Sentiment'
         },
         {
@@ -71,34 +71,26 @@ def run_ood_sentiment_test():
 
     # Prepare results file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = "outputs/ood_sentiment_test"
+    results_dir = "outputs/ood_sentiment_test_lambda"
     os.makedirs(results_dir, exist_ok=True)
     results_file = os.path.join(results_dir, f"results_{timestamp}.csv")
 
     with open(results_file, 'w', newline='') as csvfile:
-        fieldnames = ['dataset', 'model', 'run_type', 'original_epochs', 'test_loss', 'test_accuracy', 'test_precision', 'test_recall', 'test_f1']
+        fieldnames = ['dataset', 'model', 'original_epochs', 'lambda', 'test_loss', 'test_accuracy', 'test_precision', 'test_recall', 'test_f1']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
         for dataset_config in datasets:
-            for model_name in models:
-                for run_type in run_types:
-                    for epochs in original_epochs:
-                        # try:
-                        logging.info(f"Testing model: {model_name}, run_type={run_type}, original_epochs={epochs}, dataset={dataset_config['name']}")
+            for epochs in original_epochs:
+                for lambda_value in lambda_values:
+                    try:
+                        logging.info(f"Testing model: {model_name}, original_epochs={epochs}, lambda={lambda_value}, dataset={dataset_config['name']}")
 
-                        # Construct the model path based on the run type
-                        if run_type == 'sentiment_naive_baseline':
-                            model_path = find_model_file(f"trained_models/imdb_sentiment_naive_baseline_{model_name}_{epochs}epochs/sentiment")
-                        elif run_type == 'regularized':
-                            model_path = find_model_file(f"trained_models/imdb_regularized_{model_name}_{epochs}_5epochs/sentiment")
-                        elif run_type == 'causal_phrases':
-                            model_path = find_model_file(f"trained_models/imdb_causal_phrases_{model_name}_{epochs}epochs/sentiment")
-                        else:
-                            raise ValueError(f"Unknown run_type: {run_type}")
+                        # Construct the model path
+                        model_path = find_model_file(f"trained_models/imdb_regularized_{model_name}_{epochs}_10epochs_lambda{lambda_value}/sentiment")
 
                         if model_path is None:
-                            logging.warning(f"Model file not found for {model_name} with run_type={run_type} and epochs={epochs}. Skipping...")
+                            logging.warning(f"Model file not found for {model_name} with epochs={epochs} and lambda={lambda_value}. Skipping...")
                             continue
 
                         model = load_trained_model(model_path, model_variations[model_name][hidden_layer](classification_word, freeze_encoder=False)).to(device)
@@ -142,15 +134,14 @@ def run_ood_sentiment_test():
                         accuracy = correct_predictions / total_predictions
 
                         # Calculate precision, recall, and F1 score
-                        from sklearn.metrics import precision_recall_fscore_support
                         precision, recall, f1, _ = precision_recall_fscore_support(all_labels, all_predictions, average='binary')
 
                         # Write results
                         writer.writerow({
                             'dataset': dataset_config['name'],
                             'model': model_name,
-                            'run_type': run_type,
                             'original_epochs': epochs,
+                            'lambda': lambda_value,
                             'test_loss': avg_loss,
                             'test_accuracy': accuracy,
                             'test_precision': precision,
@@ -159,18 +150,20 @@ def run_ood_sentiment_test():
                         })
                         csvfile.flush()  # Ensure data is written immediately
 
-                        logging.info(f"Completed testing {model_name}, run_type={run_type}, original_epochs={epochs}, dataset={dataset_config['name']}")
+                        logging.info(f"Completed testing {model_name}, original_epochs={epochs}, lambda={lambda_value}, dataset={dataset_config['name']}")
                         logging.info(f"Test Loss: {avg_loss:.4f}, Accuracy: {accuracy:.4f}")
 
-                        # except Exception as e:
-                        #     logging.error(f"Error testing {model_name} with run_type={run_type}, epochs={epochs}, and dataset={dataset_config['name']}: {e}")
+                    except Exception as e:
+                        logging.error(f"Error testing {model_name} with epochs={epochs}, lambda={lambda_value}, and dataset={dataset_config['name']}: {e}")
 
-                        # finally:
-                        #     # Clear CUDA cache
-                        #     if torch.cuda.is_available():
-                        #         torch.cuda.empty_cache()
+                    finally:
+                        # Clear CUDA cache
+                        if torch.cuda.is_available():
+                            torch.cuda.empty_cache()
 
     logging.info(f"Testing completed. Results saved to {results_file}")
 
 if __name__ == "__main__":
     run_ood_sentiment_test()
+    
+
