@@ -1,0 +1,2 @@
+model,original_epochs,regularized_epochs,lambda_reg,final_loss,test_loss,test_accuracy,test_precision,test_recall,test_f1
+electra_small_discriminator,5,10,0.0,0.5427902939976478,0.5112075598872438,0.74352,0.759043723585029,0.74352,0.7396190348718822
