@@ -1,0 +1,2 @@
+model_type,model,epochs,lambda,final_loss,test_loss,test_accuracy,test_precision,test_recall,test_f1,model_path
+causal_neutral,distilroberta,10,,0.3553809404373169,0,0,0,0,0,trained_models/imdb_sentiment/causal_neutral/distilroberta_10epochs/20240924_201212.pth

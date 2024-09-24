@@ -1,0 +1,2 @@
+model,epochs,lambda,final_loss,test_loss,test_accuracy,test_precision,test_recall,test_f1,model_path
+distilroberta,5,,0.4064043468358565,0.37502109715524984,0.85868,0.8597794422262633,0.85868,0.8585719532717121,trained_models/imdb_sentiment/naive/distilroberta_5epochs/20240924_193548.pth
