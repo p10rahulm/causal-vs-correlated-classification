@@ -129,7 +129,7 @@ def main():
         col = ['user_input', 'toxicity']
         classification_word = 'toxic'
     
-    elif dataset == 'toxicity':
+    elif dataset == 'jigsaw_toxicity':
         data = pd.read_csv('data/toxicity_data/train.csv')
         data = data.sample(n=1000, random_state=random_seed)
         col = ['comment_text', 'toxic']
