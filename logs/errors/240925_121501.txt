@@ -1,0 +1,5 @@
+Attempt 1: Error decoding JSON: Invalid \escape: line 3 column 160 (char 186)
+Response text: {
+    "toxic_phrases": [],
+    "neutral_phrases": ["act", "as", "php developer", "I", "am", "using", "the", "Textalk", "/ websocket", "- php library", "but", "i", "receive '", "WebSocket\ConnectionException", "Server sent", "bad upgrade response", "message", "when", "is try", "to run"]
+}
