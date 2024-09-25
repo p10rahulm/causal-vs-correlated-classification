@@ -13,7 +13,7 @@ sys.path.insert(0, str(project_root))
 import torch
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
 from data_loaders.classification_data_loaders.sentiment_imdb import IMDBDataModule
-from phrase_extraction import extract_phrases, remove_punctuation_phrases
+from utilities.phrase_extraction import extract_phrases, remove_punctuation_phrases
 import torch.nn.functional as F
 from tqdm import tqdm
 

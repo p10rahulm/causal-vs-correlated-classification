@@ -16,7 +16,7 @@ from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
 
 from experiments.baseline_method.baseline import tokenize, get_embeddings
 from utilities import get_claude_response, get_claude_pre_prompt, save_results, set_seed, append_to_json
-from phrase_extraction import remove_punctuation_phrases, extract_phrases
+from utilities.phrase_extraction import remove_punctuation_phrases, extract_phrases
 from phrase_classification import prompt_builder
 
 def remove_non_ascii(text):

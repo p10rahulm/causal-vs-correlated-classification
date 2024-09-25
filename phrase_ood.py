@@ -2,7 +2,7 @@ from utilities import get_claude_response, get_claude_pre_prompt, save_results, 
 import json
 import textwrap
 from data_loaders.imdb import get_imdb_train_samples, get_imdb_test_samples
-from phrase_extraction import remove_punctuation_phrases, extract_phrases
+from utilities.phrase_extraction import remove_punctuation_phrases, extract_phrases
 import sys
 from phrase_classification import prompt_builder
 import pandas as pd

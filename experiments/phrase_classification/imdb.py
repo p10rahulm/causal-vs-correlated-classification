@@ -12,7 +12,7 @@ from utilities import get_claude_response, save_results, set_seed, append_to_jso
 import json
 import textwrap
 from data_loaders.imdb import get_imdb_train_samples, get_imdb_test_samples
-from phrase_extraction import remove_punctuation_phrases, extract_phrases
+from utilities.phrase_extraction import remove_punctuation_phrases, extract_phrases
 
 
 def read_examples_from_file(classification_word):
