@@ -6,6 +6,7 @@ from datetime import datetime
 import torch
 from torch.utils.data import DataLoader
 from transformers import AutoTokenizer
+import glob
 
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
@@ -14,7 +15,7 @@ while not (project_root / '.git').exists() and project_root != project_root.pare
 sys.path.insert(0, str(project_root))
 
 from models.causal_neutral_model_variations import model_variations
-
+from models.model_utilities import get_latest_model_path, load_model, save_model
 from data_loaders.imdb_sentiment.core import IMDBDataModule
 from data_loaders.imdb_sentiment.causal_neutral import CausalNeutralDataModule
 from data_loaders.imdb_sentiment.causal_classification import CausalPhraseIMDBDataModule
@@ -58,6 +59,14 @@ def get_model_path(model_type, model_name, epochs, lambda_value=None):
         raise ValueError("Invalid model type")
 
 
+def get_latest_model(model_type, model_name, epochs):
+    base_path = f"trained_models/imdb_sentiment/{model_type}/{model_name}_{epochs}epochs"
+    model_files = glob.glob(f"{base_path}/*.pth")
+    if not model_files:
+        return None
+    return max(model_files, key=os.path.getctime)
+
+
 def setup_results_file(model_type):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     results_dir = f"outputs/imdb_sentiment_{model_type}"
@@ -94,62 +103,76 @@ def train_and_evaluate(model, trainer, model_type, model_name, epochs, lambda_va
 
 
 def train_naive_baseline(config, imdb_data_module, model_name, epochs):
-    model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=True).to(config['device'])
-    optimizer_config = get_optimizer_config(config)
-    trainer = Trainer(model, imdb_data_module, optimizer_name=config['optimizer_name'],
-                      optimizer_params=optimizer_config['params'],
-                      batch_size=config['batch_size'], num_epochs=epochs, device=config['device'])
-    results = train_and_evaluate(model, trainer, 'naive', model_name, epochs)
-    log_results(results, config['result_files']['naive'])
-    log_model_location(results)
-    return model, results
+    model = load_model('naive', model_name, config['hidden_layer'], epochs, config['device'], 
+                       classification_word=config['classification_word'], dataset_name=config['dataset_name'])
+    if model is None:
+        model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=True).to(config['device'])
+        optimizer_config = get_optimizer_config(config)
+        trainer = Trainer(model, imdb_data_module, optimizer_name=config['optimizer_name'],
+                        optimizer_params=optimizer_config['params'],
+                        batch_size=config['batch_size'], num_epochs=epochs, device=config['device'])
+        results = train_and_evaluate(model, trainer, 'naive', model_name, epochs)
+        log_results(results, config['result_files']['naive'])
+        log_model_location(results)
+        return model, results
+    return model, None
 
 
 def train_causal_neutral(config, model_name, causal_neutral_data_module):
-    
-    model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=True).to(config['device'])
-    optimizer_config = get_optimizer_config(config)
-    trainer = Trainer(model, causal_neutral_data_module, optimizer_name=config['optimizer_name'],
-                      optimizer_params=optimizer_config['params'],
-                      batch_size=config['batch_size'], num_epochs=10, device=config['device'])
-    results = train_and_evaluate(model, trainer, 'causal_neutral', model_name, 10, evaluation_flag=False)
-    log_results(results, config['result_files']['causal_neutral'])
-    log_model_location(results)
-    return model, results
+    model = load_model('causal_neutral', model_name, config['hidden_layer'], 10, config['device'], 
+                       classification_word=config['classification_word'], dataset_name=config['dataset_name'])
+    if model is None:
+        print(f"Training new causal neutral model: {model_name}")
+        model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=True).to(config['device'])
+        optimizer_config = get_optimizer_config(config)
+        trainer = Trainer(model, causal_neutral_data_module, optimizer_name=config['optimizer_name'],
+                        optimizer_params=optimizer_config['params'],
+                        batch_size=config['batch_size'], num_epochs=10, device=config['device'])
+        results = train_and_evaluate(model, trainer, 'causal_neutral', model_name, 10, evaluation_flag=False)
+        log_results(results, config['result_files']['causal_neutral'])
+        log_model_location(results)
+        return model, results
+    return model, None
 
 
 def train_causal_classifier(config, causal_phrase_data_module, model_name, epochs):
-    model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=False).to(config['device'])
-    optimizer_config = get_optimizer_config(config)
-    trainer = Trainer(model, causal_phrase_data_module, optimizer_name=config['optimizer_name'],
-                      optimizer_params=optimizer_config['params'],
-                      batch_size=config['batch_size'], num_epochs=epochs, device=config['device'])
-    results = train_and_evaluate(model, trainer, 'causal_classifier', model_name, epochs)
-    log_results(results, config['result_files']['causal_classifier'])
-    log_model_location(results)
-    return model, results
-
+    model = load_model('causal_classifier', model_name, config['hidden_layer'], epochs, config['device'], 
+                       classification_word=config['classification_word'], dataset_name=config['dataset_name'])
+    if model is None:
+        model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=False).to(config['device'])
+        optimizer_config = get_optimizer_config(config)
+        trainer = Trainer(model, causal_phrase_data_module, optimizer_name=config['optimizer_name'],
+                        optimizer_params=optimizer_config['params'],
+                        batch_size=config['batch_size'], num_epochs=epochs, device=config['device'])
+        results = train_and_evaluate(model, trainer, 'causal_classifier', model_name, epochs)
+        log_results(results, config['result_files']['causal_classifier'])
+        log_model_location(results)
+        return model, results
+    return model, None
 
 def train_regularized(config, regularized_data_module, model_name, epochs, lambda_value, naive_model):
-    model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=False).to(config['device'])
-    model.load_state_dict(naive_model.state_dict())  # Initialize with naive model weights
-    optimizer_config = get_optimizer_config(config)
-    trainer = RegularizedTrainer(
-        model_eta=naive_model,
-        model_theta=model,
-        data_module=regularized_data_module,
-        optimizer_name=config['optimizer_name'],
-        optimizer_params=optimizer_config['params'],
-        batch_size=config['batch_size'],
-        num_epochs=10,  # Always 10 epochs for regularized model
-        device=config['device'],
-        lambda_reg=lambda_value
-    )
-    results = train_and_evaluate(model, trainer, 'regularized', model_name, epochs, lambda_value)
-    log_results(results, config['result_files']['regularized'])
-    log_model_location(results)
-    return model, results
-
+    model = load_model('regularized', f"{model_name}_{lambda_value}", config['hidden_layer'], epochs, config['device'], 
+                       classification_word=config['classification_word'], dataset_name=config['dataset_name'])
+    if model is None:
+        model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=False).to(config['device'])
+        model.load_state_dict(naive_model.state_dict())  # Initialize with naive model weights
+        optimizer_config = get_optimizer_config(config)
+        trainer = RegularizedTrainer(
+            model_eta=naive_model,
+            model_theta=model,
+            data_module=regularized_data_module,
+            optimizer_name=config['optimizer_name'],
+            optimizer_params=optimizer_config['params'],
+            batch_size=config['batch_size'],
+            num_epochs=10,  # Always 10 epochs for regularized model
+            device=config['device'],
+            lambda_reg=lambda_value
+        )
+        results = train_and_evaluate(model, trainer, 'regularized', model_name, epochs, lambda_value)
+        log_results(results, config['result_files']['regularized'])
+        log_model_location(results)
+        return model, results
+    return model, None
 
 def get_optimizer_config(config):
     optimizer_config = optimizer_configs[config['optimizer_name']].copy()
@@ -179,7 +202,9 @@ def main():
             'causal_neutral': setup_results_file('causal_neutral'),
             'causal_classifier': setup_results_file('causal_classifier'),
             'regularized': setup_results_file('regularized')
-        }
+        },
+        'classification_word': "Sentiment",
+        'dataset_name': "imdb_sentiment",
     }
     # temporarily modifying this file
     config['models'] = ['distilroberta']

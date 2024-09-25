@@ -129,7 +129,12 @@ class RegularizedTrainer(Trainer):
     def train(self, full_dataset=False) -> List[dict]:
         # Override the train method to use train_with_regularization
         return self.train_with_regularization(full_dataset=full_dataset)
-  
+    
+    def train_on_full_dataset(self, num_epochs=5):
+        # Override the train_on_full_dataset method in the base class
+        self.num_epochs=num_epochs
+        return self.train(full_dataset=True)
+      
     def test(self) -> Tuple[float, float, float, float, float]:
         self.model_theta.eval()
         total_loss = 0
