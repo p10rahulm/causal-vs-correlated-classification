@@ -86,7 +86,7 @@ class RegularizedTrainer(Trainer):
 
     def train_with_regularization(self, full_dataset=True) -> List[float]:
         if full_dataset:
-            self.train_loader = self.data_module.get_full_train_dataloader(self.model.tokenizer, self.batch_size)
+            self.train_loader = self.data_module.get_full_train_dataloader(self.batch_size)
         else:
             self.prepare_data()
         self.model_eta.eval()  # Freeze P_η

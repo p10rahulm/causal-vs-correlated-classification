@@ -17,9 +17,10 @@ sys.path.insert(0, str(project_root))
 from models.causal_neutral_model_variations import model_variations
 from models.model_utilities import load_model, load_best_causal_neutral_model
 from data_loaders.imdb_sentiment.core import IMDBDataModule
-from data_loaders.imdb_sentiment.causal_neutral import CausalNeutralDataModule
-from data_loaders.imdb_sentiment.causal_classification import CausalPhraseIMDBDataModule
-from data_loaders.imdb_sentiment.regularized import CausalPhraseWithOriginalIMDBDataModule
+from data_loaders.causal_neutral import CausalNeutralDataModule
+from data_loaders.causal_classification import CausalPhraseDataModule
+from data_loaders.regularized import RegularizedDataModule
+
 from trainers.trainer import Trainer
 from trainers.regularized_classification_trainer import RegularizedTrainer
 from optimizers.optimizer_params import optimizer_configs
@@ -141,8 +142,8 @@ def train_causal_classifier(config, causal_phrase_data_module, model_name, epoch
     model = load_model('causal_classifier', model_name, config['hidden_layer'], epochs, config['device'], 
                        classification_word=config['classification_word'], dataset_name=config['dataset_name'])
     if model is None:
-        print(f"Training new causal neutral model: {model_name}, epochs: {epochs}, 
-              dataset_name={config['dataset_name']}, hidden_layer:{config['hidden_layer']}")
+        print(f"Training new causal neutral model: {model_name}, epochs: {epochs}, \
+            dataset_name={config['dataset_name']}, hidden_layer:{config['hidden_layer']}")
         model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=False).to(config['device'])
         optimizer_config = get_optimizer_config(config)
         trainer = Trainer(model, causal_phrase_data_module, optimizer_name=config['optimizer_name'],
@@ -158,7 +159,7 @@ def train_regularized(config, regularized_data_module, model_name, epochs, lambd
     model = load_model('regularized', f"{model_name}_{lambda_value}", config['hidden_layer'], epochs, config['device'], 
                        classification_word=config['classification_word'], dataset_name=config['dataset_name'])
     if model is None:
-        print(f"Training new regularized model: {model_name}, epochs: {epochs}, lambda: {lambda_value}, 
+        print(f"Training new regularized model: {model_name}, epochs: {epochs}, lambda: {lambda_value}, \
               dataset_name={config['dataset_name']}, hidden_layer:{config['hidden_layer']}")
         model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=False).to(config['device'])
         model.load_state_dict(naive_model.state_dict())  # Initialize with naive model weights
@@ -212,7 +213,7 @@ def main():
         'classification_word': "Sentiment",
         'dataset_name': "imdb_sentiment",
         'fixed_causal_neutral_model': 'bert',
-        'use_fixed_causal_neutral_model': True,
+        'use_fixed_causal_neutral_model': False,
     }
     # temporarily modifying this file
     config['models'] = ['distilroberta']
@@ -239,12 +240,16 @@ def main():
                 causal_neutral_model, _ = train_causal_neutral(config, model_name, causal_neutral_data_module)                
                        
             # Model 3: Causal Phrase Sentiment Classifier
-            causal_phrase_data_module = CausalPhraseIMDBDataModule()
+            causal_phrase_data_module = CausalPhraseDataModule(base_data_module=imdb_data_module, 
+                                                               classification_word="Sentiment", 
+                                                               text_column='text', label_column='label')
+            # causal_phrase_data_module = CausalPhraseIMDBDataModule()
             causal_phrase_data_module.set_causal_neutral_model(causal_neutral_model, causal_neutral_model.tokenizer)
             train_causal_classifier(config, causal_phrase_data_module, model_name, epoch)
             
             # Model 4: Regularized Model
-            regularized_data_module = CausalPhraseWithOriginalIMDBDataModule(batch_size=config['batch_size'])
+            regularized_data_module = RegularizedDataModule(base_data_module=imdb_data_module, classification_word="Sentiment", 
+                                                            text_column='text', label_column='label', batch_size=config['batch_size'])
             if config['fixed_causal_neutral_model'] is not None:
                 try:
                     fixed_causal_neutral_model = load_best_causal_neutral_model(config=config)
