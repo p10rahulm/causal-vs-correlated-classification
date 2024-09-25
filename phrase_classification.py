@@ -1,12 +1,20 @@
+import os
+import sys
+from pathlib import Path
+
+# Add project root to system path
+project_root = Path(__file__).resolve().parent
+while not (project_root / '.git').exists() and project_root != project_root.parent:
+    project_root = project_root.parent
+sys.path.insert(0, str(project_root))
+
 from utilities import get_claude_response, save_results, set_seed, append_to_json
 import json
 import textwrap
-from data_loaders.imdb import get_imdb_train_samples, get_imdb_test_samples
+from data_loaders.imdb import get_imdb_train_samples
 from phrase_extraction import remove_punctuation_phrases, extract_phrases
-import sys
 import pandas as pd
 import re
-import os
 import argparse
 
 def remove_non_ascii(text):

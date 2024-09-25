@@ -1,0 +1,9 @@
+model_type,model,epochs,lambda,final_loss,test_loss,test_accuracy,test_precision,test_recall,test_f1,model_path
+regularized,distilroberta,5,0.0,0.3502169214949316,0.31617157054798944,0.87204,0.8724309631278532,0.87204,0.8720064093620729,trained_models/imdb_sentiment/regularized/distilroberta_5_10epochs_lambda0.0/20240925_053520.pth
+regularized,distilroberta,5,0.01,0.3484511551808338,0.3161009425411419,0.87208,0.8726526329418838,0.87208,0.8720308393672513,trained_models/imdb_sentiment/regularized/distilroberta_5_10epochs_lambda0.01/20240925_061024.pth
+regularized,distilroberta,5,0.025,0.34945847519806456,0.31457644457719763,0.87196,0.8719644016779439,0.87196,0.8719596212053434,trained_models/imdb_sentiment/regularized/distilroberta_5_10epochs_lambda0.025/20240925_064534.pth
+regularized,distilroberta,5,0.05,0.3467004773568134,0.31496976331180454,0.87188,0.8719742755410285,0.87188,0.871871881597413,trained_models/imdb_sentiment/regularized/distilroberta_5_10epochs_lambda0.05/20240925_072046.pth
+regularized,distilroberta,5,0.1,0.3444560170173645,0.313682420673419,0.87192,0.8721175354679159,0.87192,0.8719030001959173,trained_models/imdb_sentiment/regularized/distilroberta_5_10epochs_lambda0.1/20240925_075558.pth
+regularized,distilroberta,5,0.25,0.3344980283659332,0.31509996676931573,0.87168,0.871750386325946,0.87168,0.8716739257622717,trained_models/imdb_sentiment/regularized/distilroberta_5_10epochs_lambda0.25/20240925_083108.pth
+regularized,distilroberta,5,0.5,0.32158245328737767,0.3160082716114667,0.87184,0.8722522911519847,0.87184,0.8718045040003909,trained_models/imdb_sentiment/regularized/distilroberta_5_10epochs_lambda0.5/20240925_090621.pth
+regularized,distilroberta,5,1,0.2756388800180688,0.38020704504178493,0.85804,0.8580817666572629,0.85804,0.8580358603256871,trained_models/imdb_sentiment/regularized/distilroberta_5_10epochs_lambda1/20240925_094138.pth

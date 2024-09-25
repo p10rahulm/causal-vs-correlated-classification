@@ -70,6 +70,8 @@ def get_latest_model(model_type, model_name, epochs):
 def setup_results_file(model_type):
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     results_dir = f"outputs/imdb_sentiment_{model_type}"
+    if model_type=='regularized':
+        results_dir = f"outputs/imdb_sentiment_{model_type}_lambda"
     os.makedirs(results_dir, exist_ok=True)
     return os.path.join(results_dir, f"results_{timestamp}.csv")
 
@@ -139,6 +141,8 @@ def train_causal_classifier(config, causal_phrase_data_module, model_name, epoch
     model = load_model('causal_classifier', model_name, config['hidden_layer'], epochs, config['device'], 
                        classification_word=config['classification_word'], dataset_name=config['dataset_name'])
     if model is None:
+        print(f"Training new causal neutral model: {model_name}, epochs: {epochs}, 
+              dataset_name={config['dataset_name']}, hidden_layer:{config['hidden_layer']}")
         model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=False).to(config['device'])
         optimizer_config = get_optimizer_config(config)
         trainer = Trainer(model, causal_phrase_data_module, optimizer_name=config['optimizer_name'],
@@ -154,6 +158,8 @@ def train_regularized(config, regularized_data_module, model_name, epochs, lambd
     model = load_model('regularized', f"{model_name}_{lambda_value}", config['hidden_layer'], epochs, config['device'], 
                        classification_word=config['classification_word'], dataset_name=config['dataset_name'])
     if model is None:
+        print(f"Training new regularized model: {model_name}, epochs: {epochs}, lambda: {lambda_value}, 
+              dataset_name={config['dataset_name']}, hidden_layer:{config['hidden_layer']}")
         model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=False).to(config['device'])
         model.load_state_dict(naive_model.state_dict())  # Initialize with naive model weights
         optimizer_config = get_optimizer_config(config)
@@ -164,7 +170,7 @@ def train_regularized(config, regularized_data_module, model_name, epochs, lambd
             optimizer_name=config['optimizer_name'],
             optimizer_params=optimizer_config['params'],
             batch_size=config['batch_size'],
-            num_epochs=10,  # Always 10 epochs for regularized model
+            num_epochs=10,
             device=config['device'],
             lambda_reg=lambda_value
         )
