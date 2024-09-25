@@ -140,8 +140,8 @@ class CausalPhraseDataModule:
 
 # Example usage
 if __name__ == "__main__":
-    from data_loaders.imdb_sentiment.core import IMDBDataModule
-    from data_loaders.jigsaw_toxicity.core import JigsawToxicityDataModule
+    from data_loaders.dataset_specific.imdb_sentiment import IMDBDataModule
+    from data_loaders.dataset_specific.jigsaw_toxicity import JigsawToxicityDataModule
 
     # For IMDB
     imdb_base_module = IMDBDataModule()
