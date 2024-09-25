@@ -22,7 +22,7 @@ from utilities.general_utilities import get_project_root
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from typing import Dict, Any, Tuple, List, Union
 import logging
-from data_loaders.base_data_module import BaseDataModule
+from data_loaders.common.base_data_module import BaseDataModule
 
 
 class Trainer:

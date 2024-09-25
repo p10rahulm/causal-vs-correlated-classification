@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import torch
 from torch.utils.data import DataLoader, TensorDataset
-from data_loaders.base_data_module import BaseDataModule
+from data_loaders.common.base_data_module import BaseDataModule
 from sklearn.model_selection import train_test_split
 
 class CausalNeutralDataModule(BaseDataModule):

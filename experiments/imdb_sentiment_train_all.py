@@ -17,9 +17,9 @@ sys.path.insert(0, str(project_root))
 from models.causal_neutral_model_variations import model_variations
 from models.model_utilities import load_model, load_best_causal_neutral_model
 from data_loaders.imdb_sentiment.core import IMDBDataModule
-from data_loaders.causal_neutral import CausalNeutralDataModule
-from data_loaders.causal_classification import CausalPhraseDataModule
-from data_loaders.regularized import RegularizedDataModule
+from data_loaders.common.causal_neutral import CausalNeutralDataModule
+from data_loaders.common.causal_classification import CausalPhraseDataModule
+from data_loaders.common.regularized import RegularizedDataModule
 
 from trainers.trainer import Trainer
 from trainers.regularized_classification_trainer import RegularizedTrainer

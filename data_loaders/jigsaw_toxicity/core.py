@@ -1,7 +1,7 @@
 from datasets import load_dataset
 import torch
 from torch.utils.data import DataLoader, TensorDataset, random_split
-from data_loaders.base_data_module import BaseDataModule
+from data_loaders.common.base_data_module import BaseDataModule
 
 class JigsawToxicityDataModule(BaseDataModule):
     def __init__(self, classification_column="toxic", val_split=0.1):
