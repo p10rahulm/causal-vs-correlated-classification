@@ -1,0 +1,29 @@
+Attempt 1: Error decoding JSON: Invalid \escape: line 26 column 19 (char 544)
+Response text: {
+    "factual_phrases": [
+        "Manugistics Group",
+        "Inc.",
+        "disclosed",
+        "Monday",
+        "it fired",
+        "its president",
+        "maker of",
+        "business software",
+        "tries",
+        "to reverse",
+        "slipping sales",
+        "rising costs",
+        "a falling stock price"
+    ],
+    "neutral_phrases": [
+        "that",
+        "as the",
+        "and",
+        "& lt;BR&gt;&lt;FONT",
+        "face='verdana",
+        "MS Sans Serif",
+        "arial",
+        "helvetica",
+        "size='-2'\ color='#666666'&gt;&lt;B&gt;-The Washington Post&lt;/B&gt;&lt;/FONT&gt"
+    ]
+}

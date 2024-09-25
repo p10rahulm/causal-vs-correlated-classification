@@ -1,0 +1,25 @@
+Attempt 2: Error decoding JSON: Invalid \escape: line 12 column 10 (char 204)
+Response text: {
+    "toxic_phrases": [],
+    "neutral_phrases": [
+        "I",
+        "will",
+        "ask",
+        "you",
+        "question",
+        "based",
+        "on",
+        "the following content",
+        "\-",
+        "Start of",
+        "Content- \The red glass",
+        "is on",
+        "the blue table.\- End",
+        "of",
+        "Content- \Question",
+        "What is",
+        "the color",
+        "of",
+        "the glass"
+    ]
+}

@@ -16,12 +16,18 @@ from phrase_extraction import remove_punctuation_phrases, extract_phrases
 import pandas as pd
 import re
 import argparse
+from tqdm import tqdm 
+import numpy as np
+from sklearn.preprocessing import LabelEncoder
+
+
 
 def remove_non_ascii(text):
     if isinstance(text, str):
         # Remove non-ASCII characters using regex
         return re.sub(r'[^\x00-\x7F]+', '', text)
     return text
+
 
 def read_examples_from_file(classification_word):
     file_path = f"prompt_templates/wz_classification/{classification_word.lower()}.txt"
@@ -68,13 +74,14 @@ def prompt_builder(phrases, full_text, classification_word="Sentiment", dataset 
             IMPORTANT: Your response must be ONLY valid JSON that matches the structure described. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
         """).strip()
 
+
 def classify_phrases(phrases, full_text, classification_word="Sentiment", dataset = 'imdb'):
     user_prompt = prompt_builder(phrases, full_text, classification_word, dataset=dataset)
     return get_claude_response(user_prompt)
 
 
 def process_texts(texts, labels, classification_word="Sentiment", num_samples=None, output_file=None, dataset = 'imdb'):
-    for i, (text, label) in enumerate(zip(texts, labels)):
+    for i, (text, label) in tqdm(enumerate(zip(texts, labels))):
         if num_samples is not None and i >= num_samples:
             break
         text = text.replace('"', '')
@@ -95,7 +102,7 @@ def process_texts(texts, labels, classification_word="Sentiment", num_samples=No
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Script for phrase classification")
-    parser.add_argument('--dataset', type=str, required=False, help='imdb, jailbreak, toxicity, news', default='imdb')
+    parser.add_argument('--dataset', type=str, required=False, help='imdb, jailbreak, toxicity, olid', default='imdb')
     args = parser.parse_args()
     return args
 
@@ -103,10 +110,9 @@ def parse_args():
 def main():
     args = parse_args()
     set_seed(42)
-    num_examples, random_seed = 1, 42
+    num_examples, random_seed = 1000, 42
     
     dataset = args.dataset 
-    print(dataset)
     if dataset == 'imdb':
         train_texts, train_labels = get_imdb_train_samples(n=num_examples)
         classification_word = "Sentiment"  # or Genre
@@ -119,21 +125,23 @@ def main():
     elif dataset == 'jailbreak':
         splits = {'train': 'data/0124/toxic-chat_annotation_train.csv', 'test': 'data/0124/toxic-chat_annotation_test.csv'}
         data = pd.read_csv("hf://datasets/lmsys/toxic-chat/" + splits["train"])
-        data = data.sample(n=5, random_state=random_seed)
+        data = data.sample(n=int(len(data)/10), random_state=random_seed)
         col = ['user_input', 'toxicity']
         classification_word = 'toxic'
     
     elif dataset == 'toxicity':
         data = pd.read_csv('data/toxicity_data/train.csv')
-        data = data.sample(n=5, random_state=random_seed)
+        data = data.sample(n=1000, random_state=random_seed)
         col = ['comment_text', 'toxic']
         classification_word = 'toxic'
         
-    elif dataset == 'news':
-        data = pd.read_csv('data/news_data/train.csv')
-        data = data.sample(n=5, random_state=random_seed)
-        col = ['Description', 'Class Index']
-        classification_word = 'factual'
+    elif dataset == 'olid':
+        data = pd.read_csv('data/olid_data/olid-training-v1.0.tsv', sep='\t')
+        data = data.sample(n=1000, random_state=random_seed)
+        lb = LabelEncoder() 
+        col = ['tweet', 'subtask_a']
+        data[col[1]] = lb.fit_transform(data[col[1]])
+        classification_word = 'offensive'
 
 
     data = data.map(lambda x: x.replace('"', "'") if isinstance(x, str) else x)

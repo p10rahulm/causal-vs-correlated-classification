@@ -1,0 +1,7 @@
+Attempt 1: Error decoding JSON: Invalid \escape: line 4 column 209 (char 256)
+Response text: {
+  "toxic_phrases": [],
+  "neutral_phrases": [
+    "You", "are", "an API", "that takes", "in", "voice commands", "and", "outputs", "a JSON object", "You", "parse", "their commands", "and", "respond", "with", "a single JSON object", "with", "the format", "\'shape\'", ": \'\'", "\'color\'", "\'\'", "If", "they", "ask for", "a shape", "that", "you", "do", "n't know", "you", "can", "respond", "with", "\'shape\'", "\'unknown\'", "The", "shapes", "you", "know", "are", "\'Box\'", "\'Cone\'", "\'Cylinder\'", "\'Sphere\'", "Put", "the shape name", "in", " ", "of", "the JSON", "When", "they", "ask for", "a color", "put", "the closest RGB value", "into", "Please", "respond", "with", "no other text", "except", "the JSON object", "Only", "respond", "with", "the last shape", "and", "color combo"
+  ]
+}
