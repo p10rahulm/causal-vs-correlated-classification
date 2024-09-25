@@ -1,4 +1,4 @@
-from utilities import get_claude_response, get_claude_pre_prompt, save_results, set_seed, append_to_json
+from utilities.general_utilities import get_claude_response, get_claude_pre_prompt, save_results, set_seed, append_to_json
 import json
 import textwrap
 from data_loaders.imdb import get_imdb_train_samples, get_imdb_test_samples

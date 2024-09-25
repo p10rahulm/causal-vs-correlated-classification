@@ -18,7 +18,7 @@ from tqdm import tqdm
 from optimizers.optimizer_params import get_optimizer_config
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
-from utilities import get_project_root
+from utilities.general_utilities import get_project_root
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 from typing import Dict, Any, Tuple, List, Union
 import logging

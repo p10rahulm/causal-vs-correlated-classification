@@ -8,7 +8,7 @@ while not (project_root / '.git').exists() and project_root != project_root.pare
     project_root = project_root.parent
 sys.path.insert(0, str(project_root))
 
-from utilities import get_claude_response, save_results, set_seed, append_to_json
+from utilities.general_utilities import get_claude_response, save_results, set_seed, append_to_json
 import json
 import textwrap
 from data_loaders.imdb import get_imdb_train_samples, get_imdb_test_samples

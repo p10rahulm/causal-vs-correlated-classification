@@ -1,6 +1,6 @@
 import spacy
 import string
-from utilities import load_spacy_model
+from utilities.general_utilities import load_spacy_model
 # Load the English model
 nlp = load_spacy_model("en_core_web_sm")
 
