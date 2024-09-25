@@ -15,7 +15,7 @@ while not (project_root / '.git').exists() and project_root != project_root.pare
 sys.path.insert(0, str(project_root))
 
 from models.causal_neutral_model_variations import model_variations
-from models.model_utilities import get_latest_model_path, load_model, save_model
+from models.model_utilities import get_latest_model_path, load_model, save_model, load_best_causal_neutral_model
 from data_loaders.imdb_sentiment.core import IMDBDataModule
 from data_loaders.imdb_sentiment.causal_neutral import CausalNeutralDataModule
 from data_loaders.imdb_sentiment.causal_classification import CausalPhraseIMDBDataModule
@@ -195,7 +195,7 @@ def log_results(results, file_path):
 
 def main():
     config = {
-        'models': ["electra_small_discriminator", "distilbert", "t5", "roberta", "bert", "albert"],
+        'models': ["bert", "electra_small_discriminator", "distilbert", "t5", "roberta", "albert"],
         'epochs': [5, 10],
         'batch_size': 256,
         'optimizer_name': "adamw",
@@ -211,6 +211,8 @@ def main():
         },
         'classification_word': "Sentiment",
         'dataset_name': "imdb_sentiment",
+        'fixed_causal_neutral_model': 'bert',
+        'use_fixed_causal_neutral_model': True,
     }
     # temporarily modifying this file
     config['models'] = ['distilroberta']
@@ -223,10 +225,19 @@ def main():
             naive_model, _ = train_naive_baseline(config, imdb_data_module, model_name, epoch)
             
             # Model 2: Causal Neutral Classifier
-            input_file_path = "outputs/imdb_train_sentiment_analysis.json"
-            causal_neutral_data_module = CausalNeutralDataModule(input_file_path , "Sentiment")
-            causal_neutral_model, _ = train_causal_neutral(config, model_name, causal_neutral_data_module)
+            causal_neutral_model = None
+            if config['use_fixed_causal_neutral_model']:
+                try:
+                    causal_neutral_model = load_best_causal_neutral_model(config)
+                    print("Using fixed causal neutral model for Models 3 and 4")
+                except Exception as e:
+                    print(f"Failed to load fixed causal neutral model: {str(e)}\nTraining a new model.")
             
+            if causal_neutral_model is None:
+                input_file_path = "outputs/imdb_train_sentiment_analysis.json"
+                causal_neutral_data_module = CausalNeutralDataModule(input_file_path , "Sentiment")
+                causal_neutral_model, _ = train_causal_neutral(config, model_name, causal_neutral_data_module)                
+                       
             # Model 3: Causal Phrase Sentiment Classifier
             causal_phrase_data_module = CausalPhraseIMDBDataModule()
             causal_phrase_data_module.set_causal_neutral_model(causal_neutral_model, causal_neutral_model.tokenizer)
@@ -234,7 +245,13 @@ def main():
             
             # Model 4: Regularized Model
             regularized_data_module = CausalPhraseWithOriginalIMDBDataModule(batch_size=config['batch_size'])
-            regularized_data_module.set_models(causal_neutral_model, naive_model)
+            if config['fixed_causal_neutral_model'] is not None:
+                try:
+                    fixed_causal_neutral_model = load_best_causal_neutral_model(config=config)
+                    regularized_data_module.set_models(fixed_causal_neutral_model, naive_model)
+                except:
+                    regularized_data_module.set_models(causal_neutral_model, naive_model)
+            
             
             for lambda_value in config['lambda_values']:
                 train_regularized(config, regularized_data_module, model_name, epoch, lambda_value, naive_model)
