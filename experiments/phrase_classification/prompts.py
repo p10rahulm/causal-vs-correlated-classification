@@ -40,7 +40,7 @@ def prompt_builder(phrases, full_text, classification_word="Sentiment", dataset 
             1. Identify the key phrases or sentences that are most responsible for determining {classification_word}ing.
             2. Add these phrases to {classification_word}ing_phrases.
             3. Add the remaining phrases to neutral_phrases.
-
+            4. In case of lack of clarity, add the phrase to neutral_phrases.
             Output your classification as a JSON object with two keys: "{classification_word.lower()}_phrases" and "neutral_phrases", each containing a list of the corresponding phrases.
             IMPORTANT: Your response must be ONLY valid JSON that matches the structure described. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
         """).strip()
@@ -58,7 +58,7 @@ def prompt_builder(phrases, full_text, classification_word="Sentiment", dataset 
             1. Identify the key phrases or sentences that are most responsible for determining {classification_word}ity.
             2. Add these phrases to {classification_word}_phrases.
             3. Add the remaining phrases to neutral_phrases.
-
+            4. In case of lack of clarity, add the phrase to neutral_phrases.
             Output your classification as a JSON object with two keys: "{classification_word.lower()}_phrases" and "neutral_phrases", each containing a list of the corresponding phrases.
             IMPORTANT: Your response must be ONLY valid JSON that matches the structure described. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
         """).strip()
@@ -76,7 +76,7 @@ def prompt_builder(phrases, full_text, classification_word="Sentiment", dataset 
             1. Identify the key phrases or sentences that are most responsible for being {classification_word}.
             2. Add these phrases to {classification_word}_phrases.
             3. Add the remaining phrases to neutral_phrases.
-
+            4. In case of lack of clarity, add the phrase to neutral_phrases.
             Output your classification as a JSON object with two keys: "{classification_word.lower()}_phrases" and "neutral_phrases", each containing a list of the corresponding phrases.
             IMPORTANT: Your response must be ONLY valid JSON that matches the structure described. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
         """).strip()

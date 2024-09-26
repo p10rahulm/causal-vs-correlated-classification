@@ -61,7 +61,7 @@ def parse_args():
 def main():
     args = parse_args()
     set_seed(42)
-    num_examples, random_seed = 5, 42
+    num_examples, random_seed = 500, 42
     
     dataset = args.dataset 
     if dataset == 'imdb':
@@ -76,16 +76,13 @@ def main():
         splits = {'train': 'data/0124/toxic-chat_annotation_train.csv', 'test': 'data/0124/toxic-chat_annotation_test.csv'}
         data = pd.read_csv("hf://datasets/lmsys/toxic-chat/" + splits["train"])
         data = data.loc[(data['jailbreaking'] == 1) | (data['toxicity'] == 1)]
-        data = data.sample(n=num_examples, random_state=random_seed)
-        print(len(data))
+        # data = data.sample(n=num_examples, random_state=random_seed) [Only 384 samples remaining]
         col = ['user_input', 'jailbreaking']        
         classification_word = 'jailbreak'
     
     elif dataset == 'jigsaw_toxicity':
         data = pd.read_csv('../../data/toxicity_data/train.csv')
         data = data.loc[data['toxic'] == 1]
-        print(len(data))
-        sys.exit()
         data = data.sample(n=num_examples, random_state=random_seed)
         col = ['comment_text', 'toxic']
         classification_word = 'toxic'
@@ -96,8 +93,6 @@ def main():
         col = ['tweet', 'subtask_a']
         data[col[1]] = lb.fit_transform(data[col[1]])
         data = data.loc[data['subtask_a'] == 1]
-        print(len(data))
-        sys.exit()
         data = data.sample(n=num_examples, random_state=random_seed)
         classification_word = 'offensive'
 
