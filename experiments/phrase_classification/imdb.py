@@ -89,7 +89,7 @@ def main():
     output_file = f'outputs/imdb_train_{classification_word.lower()}_analysis.json'
     process_texts(train_texts, train_labels, classification_word, output_file=output_file)
     print(f"Processed {num_examples} training texts "
-          f"and saved results to imdb_train_{classification_word.lower()}_analysis.json")
+        f"and saved results to imdb_train_{classification_word.lower()}_analysis.json")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,21 @@
+Here are two examples using "Toxicity" as the classification word:
+
+Example 1: 
+Full text: "The special effects were amazing, but the actors were terrible. Tom Cruise gave a stellar performance as always." 
+Extracted phrases: ["The special effects were amazing", "but the actors were terrible", "Tom Cruise gave a stellar performance", "as always"] 
+
+Output:
+{
+"toxic_phrases": ["but the actors were terrible"],
+"non_toxic_phrases": ["The special effects were amazing", "Tom Cruise gave a stellar performance", "as always"]
+}
+
+Example 2: 
+Full text: "The movie was released in 2022. The director is incompetent and ruined the whole experience." 
+Extracted phrases: ["The movie was released in 2022", "The director is incompetent", "ruined the whole experience"] 
+
+Output:
+{
+"toxic_phrases": ["The director is incompetent", "ruined the whole experience"],
+"non_toxic_phrases": ["The movie was released in 2022"]
+}

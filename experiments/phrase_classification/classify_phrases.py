@@ -8,7 +8,7 @@ while not (project_root / '.git').exists() and project_root != project_root.pare
     project_root = project_root.parent
 sys.path.insert(0, str(project_root))
 
-from utilities.general_utilities import get_claude_response, save_results, set_seed, append_to_json
+from utilities import get_claude_response, save_results, set_seed, append_to_json
 import json
 import textwrap
 from data_loaders.imdb import get_imdb_train_samples
@@ -19,7 +19,7 @@ import argparse
 from tqdm import tqdm 
 import numpy as np
 from sklearn.preprocessing import LabelEncoder
-
+from prompts import prompt_builder
 
 
 def remove_non_ascii(text):
@@ -27,57 +27,11 @@ def remove_non_ascii(text):
         return re.sub(r'[^\x00-\x7F]+', '', text)
     return text
 
-
-def read_examples_from_file(classification_word):
-    file_path = f"prompt_templates/wz_classification/{classification_word.lower()}.txt"
-    try:
-        with open(file_path, 'r') as file:
-            return file.read().strip()
-    except FileNotFoundError:
-        print(f"Warning: Example file for {classification_word} not found. Using default examples.")
-        file_path = f"prompt_templates/wz_classification/sentiment.txt"
-        with open(file_path, 'r') as file:
-            return file.read().strip()
-
-
-def prompt_builder(phrases, full_text, classification_word="Sentiment", dataset = 'imdb'):
-    phrases_str = ", ".join(f'"{phrase}"' for phrase in phrases)
-    examples = read_examples_from_file(classification_word)
-    if dataset == 'imdb':
-        return textwrap.dedent(f"""
-            You are given the following full text:
-            "{full_text}"
-            From this text, the following phrases have been extracted:
-            {phrases_str}
-            Classify each phrase into one of two categories:
-            "{classification_word}_phrases": Those phrases that are directly related to or express {classification_word.lower()}.
-            "neutral_phrases": Those phrases that are not directly related to {classification_word.lower()}.
-            {examples}
-            Now, classify the extracted phrases from the given text based on the classification word "{classification_word}":
-            Output your classification as a JSON object with two keys: "{classification_word.lower()}_phrases" and "neutral_phrases", each containing a list of the corresponding phrases.
-            IMPORTANT: Your response must be ONLY valid JSON that matches the structure described. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
-        """).strip()
-
-    else:
-        return textwrap.dedent(f"""
-            You are given the following full text:
-            "{full_text}"
-            From this text, the following phrases have been extracted:
-            {phrases_str}
-            Classify each phrase into one of two categories:
-            "{classification_word}_phrases": Those phrases that are directly related to or express {classification_word.lower()} behaviour.
-            "neutral_phrases": Those phrases that are not directly related to {classification_word.lower()} behaviour.
-            {examples}
-            Now, classify the extracted phrases from the given text based on the classification word "{classification_word}":
-            Output your classification as a JSON object with two keys: "{classification_word.lower()}_phrases" and "neutral_phrases", each containing a list of the corresponding phrases.
-            IMPORTANT: Your response must be ONLY valid JSON that matches the structure described. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
-        """).strip()
-
-
 def classify_phrases(phrases, full_text, classification_word="Sentiment", dataset = 'imdb'):
     user_prompt = prompt_builder(phrases, full_text, classification_word, dataset=dataset)
+    print(user_prompt)
+    sys.exit()
     return get_claude_response(user_prompt)
-
 
 def process_texts(texts, labels, classification_word="Sentiment", num_samples=None, output_file=None, dataset = 'imdb'):
     for i, (text, label) in tqdm(enumerate(zip(texts, labels))):
@@ -102,21 +56,18 @@ def process_texts(texts, labels, classification_word="Sentiment", num_samples=No
 def parse_args():
     parser = argparse.ArgumentParser(description="Script for phrase classification")
     parser.add_argument('--dataset', type=str, required=False, help='imdb, jailbreak, toxicity, olid', default='imdb')
-    parser.add_argument('--ood_mode', type=str, required=False, help='imdb, jailbreak, toxicity, olid', default='sentiment')
     args = parser.parse_args()
     return args
-
 
 def main():
     args = parse_args()
     set_seed(42)
-    num_examples, random_seed = 1000, 42
+    num_examples, random_seed = 500, 42
     
     dataset = args.dataset 
     if dataset == 'imdb':
         train_texts, train_labels = get_imdb_train_samples(n=num_examples)
-        classification_word = "Sentiment"  # or Genre
-        
+        classification_word = "Sentiment" 
         output_file = f'outputs/imdb_train_{classification_word.lower()}_analysis.json'
         process_texts(train_texts, train_labels, classification_word, output_file=output_file)
         print(f"Processed {num_examples} training texts "
@@ -125,19 +76,19 @@ def main():
     elif dataset == 'jailbreak':
         splits = {'train': 'data/0124/toxic-chat_annotation_train.csv', 'test': 'data/0124/toxic-chat_annotation_test.csv'}
         data = pd.read_csv("hf://datasets/lmsys/toxic-chat/" + splits["train"])
-        data = data.sample(n=int(len(data)/10), random_state=random_seed)
-        col = ['user_input', 'toxicity']
-        classification_word = 'toxic'
+        data = data.sample(n=(num_examples / 100), random_state=random_seed)
+        col = ['user_input', 'jailbreaking']        
+        classification_word = 'jailbreak'
     
-    elif dataset == 'jigsaw_toxicity':
+    elif dataset == 'toxicity':
         data = pd.read_csv('data/toxicity_data/train.csv')
-        data = data.sample(n=1000, random_state=random_seed)
+        data = data.sample(n=num_examples, random_state=random_seed)
         col = ['comment_text', 'toxic']
         classification_word = 'toxic'
         
     elif dataset == 'olid':
         data = pd.read_csv('data/olid_data/olid-training-v1.0.tsv', sep='\t')
-        data = data.sample(n=1000, random_state=random_seed)
+        data = data.sample(n=num_examples, random_state=random_seed)
         lb = LabelEncoder() 
         col = ['tweet', 'subtask_a']
         data[col[1]] = lb.fit_transform(data[col[1]])

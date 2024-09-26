@@ -9,14 +9,15 @@ import math
 from tqdm import tqdm
 import re
 from datasets import load_dataset
+from sklearn.preprocessing import LabelEncoder
 
 
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
 
 from experiments.baseline_method.baseline import tokenize, get_embeddings
-from utilities.general_utilities import get_claude_response, get_claude_pre_prompt, save_results, set_seed, append_to_json
-from utilities.phrase_extraction import remove_punctuation_phrases, extract_phrases
+from utilities import get_claude_response, get_claude_pre_prompt, save_results, set_seed, append_to_json
+from phrase_extraction import remove_punctuation_phrases, extract_phrases
 from phrase_classification import prompt_builder
 
 def remove_non_ascii(text):
@@ -128,9 +129,10 @@ def furthest_genre(genre_list, genre_embeddings):
     return furthest_genres
 
 def main():
+    args = parse_args()
     device = "cpu"
-    ood_mode = 'sentiment'
-    dataset = 'yelp' # [imdb, yelp, amazon, toxicity]
+    ood_mode = args.ood_mode
+    dataset = args.dataset
     random_seed = 42
     
     if ood_mode == 'genre':
@@ -150,9 +152,9 @@ def main():
             col = ['text', 'label']
             classification_word = 'review'
 
-        elif dataset == 'yelp':
-            splits = {'train': 'plain_text/train-00000-of-00001.parquet', 'test': 'plain_text/test-00000-of-00001.parquet'}
-            data = pd.read_parquet("hf://datasets/fancyzhx/yelp_polarity/" + splits["test"])
+        elif dataset == 'jailbreak':
+            splits = {'train': 'data/0124/toxic-chat_annotation_train.csv', 'test': 'data/0124/toxic-chat_annotation_test.csv'}
+            data = pd.read_csv("hf://datasets/lmsys/toxic-chat/" + splits["test"])
             data = data.sample(n=1000, random_state=random_seed)
             data = data.map(lambda x: x.replace('"', "'") if isinstance(x, str) else x)
             data['text'] = data['text'].apply(lambda x: f'"{x}"' if isinstance(x, str) else x)
@@ -160,11 +162,10 @@ def main():
             data['text'] = data['text'].str.replace(r'<.*?>', '', regex=True)
             data = data.replace('\n','', regex=True)
             col = ['text', 'label']
-            classification_word = 'review'
+            classification_word = 'comment'
 
-        elif dataset == 'amazon':
-            dataset = load_dataset("fancyzhx/amazon_polarity", split = "test")
-            data = dataset.to_pandas()
+        elif dataset == 'toxicity':
+            data = pd.read_csv('data/toxicity_data/test.csv')
             data = data.sample(n=1000, random_state=random_seed)
             data = data.map(lambda x: x.replace('"', "'") if isinstance(x, str) else x)
             data['content'] = data['content'].apply(lambda x: f'"{x}"' if isinstance(x, str) else x)
@@ -174,10 +175,12 @@ def main():
             col = ['content', 'label']
             classification_word = 'review'
 
-        elif dataset == 'toxicity':
-            splits = {'train': 'data/0124/toxic-chat_annotation_train.csv', 'test': 'data/0124/toxic-chat_annotation_test.csv'}
-            data = pd.read_csv("hf://datasets/lmsys/toxic-chat/" + splits["test"])
+        elif dataset == 'olid':
+            data = pd.read_csv('data/olid_data/olid-training-v1.0.tsv', sep='\t')
             data = data.sample(n=1000, random_state=random_seed)
+            lb = LabelEncoder() 
+            col = ['tweet', 'subtask_a']
+            data[col[1]] = lb.fit_transform(data[col[1]])
             data = data.map(lambda x: x.replace('"', "'") if isinstance(x, str) else x)
             data['user_input'] = data['user_input'].apply(lambda x: f'"{x}"' if isinstance(x, str) else x)
             data = data.map(remove_non_ascii)

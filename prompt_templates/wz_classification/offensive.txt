@@ -1,0 +1,21 @@
+Here are two examples using "Offense" as the classification word:
+
+Example 1: 
+Full text: "Your idea is stupid, but at least you tried. Everyone else is working hard too." 
+Extracted phrases: ["Your idea is stupid", "but at least you tried", "Everyone else is working hard too"]
+
+Output:
+{
+"offensive_phrases": ["Your idea is stupid"],
+"non_offensive_phrases": ["but at least you tried", "Everyone else is working hard too"]
+}
+
+Example 2:
+Full text: "She always says the dumbest things. It’s frustrating when people don't think before they speak." 
+Extracted phrases: ["She always says the dumbest things", "It’s frustrating when people don't think before they speak"]
+
+Output:
+{
+"offensive_phrases": ["She always says the dumbest things"],
+"non_offensive_phrases": ["It’s frustrating when people don't think before they speak"]
+}
