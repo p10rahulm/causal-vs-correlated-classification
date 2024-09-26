@@ -105,13 +105,13 @@ def train_and_evaluate(model, trainer, model_type, model_name, epochs, lambda_va
     }
 
 
-def train_naive_baseline(config, imdb_data_module, model_name, epochs):
+def train_naive_baseline(config, base_data_module, model_name, epochs):
     model = load_model('naive', model_name, config['hidden_layer'], epochs, config['device'], 
                        classification_word=config['classification_word'], dataset_name=config['dataset_name'])
     if model is None:
         model = model_variations[model_name][config['hidden_layer']]("Sentiment", freeze_encoder=True).to(config['device'])
         optimizer_config = get_optimizer_config(config)
-        trainer = Trainer(model, imdb_data_module, optimizer_name=config['optimizer_name'],
+        trainer = Trainer(model, base_data_module, optimizer_name=config['optimizer_name'],
                         optimizer_params=optimizer_config['params'],
                         batch_size=config['batch_size'], num_epochs=epochs, device=config['device'])
         results = train_and_evaluate(model, trainer, 'naive', model_name, epochs)
@@ -214,16 +214,15 @@ def main():
         'dataset_name': "imdb_sentiment",
         'fixed_causal_neutral_model': 'bert',
         'use_fixed_causal_neutral_model': False,
+        'cn_phrase_classification_data': "outputs/imdb_train_sentiment_analysis.json",
     }
-    # temporarily modifying this file
-    config['models'] = ['distilroberta']
-
-    imdb_data_module = IMDBDataModule("Sentiment")
+    
+    base_data_module = IMDBDataModule("Sentiment")
     
     for model_name in config['models']:
         for epoch in config['epochs']:
             # Model 1: Naive Baseline
-            naive_model, _ = train_naive_baseline(config, imdb_data_module, model_name, epoch)
+            naive_model, _ = train_naive_baseline(config, base_data_module, model_name, epoch)
             
             # Model 2: Causal Neutral Classifier
             causal_neutral_model = None
@@ -235,12 +234,12 @@ def main():
                     print(f"Failed to load fixed causal neutral model: {str(e)}\nTraining a new model.")
             
             if causal_neutral_model is None:
-                input_file_path = "outputs/imdb_train_sentiment_analysis.json"
+                input_file_path = config['cn_phrase_classification_data']
                 causal_neutral_data_module = CausalNeutralDataModule(input_file_path , "Sentiment")
                 causal_neutral_model, _ = train_causal_neutral(config, model_name, causal_neutral_data_module)                
                        
             # Model 3: Causal Phrase Sentiment Classifier
-            causal_phrase_data_module = CausalPhraseDataModule(base_data_module=imdb_data_module, 
+            causal_phrase_data_module = CausalPhraseDataModule(base_data_module=base_data_module, 
                                                                classification_word="Sentiment", 
                                                                text_column='text', label_column='label')
             # causal_phrase_data_module = CausalPhraseIMDBDataModule()
@@ -248,7 +247,7 @@ def main():
             train_causal_classifier(config, causal_phrase_data_module, model_name, epoch)
             
             # Model 4: Regularized Model
-            regularized_data_module = RegularizedDataModule(base_data_module=imdb_data_module, classification_word="Sentiment", 
+            regularized_data_module = RegularizedDataModule(base_data_module=base_data_module, classification_word="Sentiment", 
                                                             text_column='text', label_column='label', batch_size=config['batch_size'])
             if config['fixed_causal_neutral_model'] is not None:
                 try:

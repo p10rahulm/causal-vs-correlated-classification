@@ -1,0 +1,3 @@
+model_type,model,epochs,lambda,final_loss,test_loss,test_accuracy,test_precision,test_recall,test_f1,model_path
+causal_classifier,distilroberta,5,,0.6322791533810752,0.6229588875965196,0.677,0.6776689323426492,0.677,0.6766956858052907,trained_models/imdb_sentiment/causal_classifier/distilroberta_5epochs/20240925_183252.pth
+causal_classifier,distilroberta,10,,0.6064937966210502,0.5938514276426665,0.69484,0.6948655027498607,0.69484,0.6948300153263733,trained_models/imdb_sentiment/causal_classifier/distilroberta_10epochs/20240926_035703.pth
