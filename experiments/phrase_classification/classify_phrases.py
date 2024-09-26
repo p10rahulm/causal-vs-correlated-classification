@@ -8,7 +8,7 @@ while not (project_root / '.git').exists() and project_root != project_root.pare
     project_root = project_root.parent
 sys.path.insert(0, str(project_root))
 
-from utilities import get_claude_response, save_results, set_seed, append_to_json
+from utilities.general_utilities import get_claude_response, save_results, set_seed, append_to_json
 import json
 import textwrap
 from data_loaders.imdb import get_imdb_train_samples
@@ -29,8 +29,6 @@ def remove_non_ascii(text):
 
 def classify_phrases(phrases, full_text, classification_word="Sentiment", dataset = 'imdb'):
     user_prompt = prompt_builder(phrases, full_text, classification_word, dataset=dataset)
-    print(user_prompt)
-    sys.exit()
     return get_claude_response(user_prompt)
 
 def process_texts(texts, labels, classification_word="Sentiment", num_samples=None, output_file=None, dataset = 'imdb'):
@@ -49,20 +47,21 @@ def process_texts(texts, labels, classification_word="Sentiment", num_samples=No
                 'label': label
             }
             if output_file:
+                print(output_file)
                 append_to_json(result, output_file)
         else:
             print(f"Failed to get a valid response for text {i}")
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Script for phrase classification")
-    parser.add_argument('--dataset', type=str, required=False, help='imdb, jailbreak, toxicity, olid', default='imdb')
+    parser.add_argument('--dataset', type=str, required=False, help='imdb, jailbreak, jigsaw_toxicity, olid', default='imdb')
     args = parser.parse_args()
     return args
 
 def main():
     args = parse_args()
     set_seed(42)
-    num_examples, random_seed = 500, 42
+    num_examples, random_seed = 5, 42
     
     dataset = args.dataset 
     if dataset == 'imdb':
@@ -76,22 +75,30 @@ def main():
     elif dataset == 'jailbreak':
         splits = {'train': 'data/0124/toxic-chat_annotation_train.csv', 'test': 'data/0124/toxic-chat_annotation_test.csv'}
         data = pd.read_csv("hf://datasets/lmsys/toxic-chat/" + splits["train"])
-        data = data.sample(n=(num_examples / 100), random_state=random_seed)
+        data = data.loc[(data['jailbreaking'] == 1) | (data['toxicity'] == 1)]
+        data = data.sample(n=num_examples, random_state=random_seed)
+        print(len(data))
         col = ['user_input', 'jailbreaking']        
         classification_word = 'jailbreak'
     
-    elif dataset == 'toxicity':
-        data = pd.read_csv('data/toxicity_data/train.csv')
+    elif dataset == 'jigsaw_toxicity':
+        data = pd.read_csv('../../data/toxicity_data/train.csv')
+        data = data.loc[data['toxic'] == 1]
+        print(len(data))
+        sys.exit()
         data = data.sample(n=num_examples, random_state=random_seed)
         col = ['comment_text', 'toxic']
         classification_word = 'toxic'
         
     elif dataset == 'olid':
-        data = pd.read_csv('data/olid_data/olid-training-v1.0.tsv', sep='\t')
-        data = data.sample(n=num_examples, random_state=random_seed)
+        data = pd.read_csv('../../data/olid_data/olid-training-v1.0.tsv', sep='\t')
         lb = LabelEncoder() 
         col = ['tweet', 'subtask_a']
         data[col[1]] = lb.fit_transform(data[col[1]])
+        data = data.loc[data['subtask_a'] == 1]
+        print(len(data))
+        sys.exit()
+        data = data.sample(n=num_examples, random_state=random_seed)
         classification_word = 'offensive'
 
 
@@ -106,7 +113,7 @@ def main():
     except:
         pass
     
-    output_file = f'outputs/{dataset}/{dataset}_train_{classification_word.lower()}_analysis.json'
+    output_file = f'../../outputs/{dataset}/{dataset}_train_{classification_word.lower()}_analysis.json'
     process_texts(data[col[0]], data[col[1]], classification_word, output_file=output_file, dataset = dataset)
     print(f"Processed {num_examples} training texts "
         f"and saved results to {dataset}_train_{classification_word.lower()}_analysis.json")

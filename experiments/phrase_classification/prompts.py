@@ -45,17 +45,20 @@ def prompt_builder(phrases, full_text, classification_word="Sentiment", dataset 
             IMPORTANT: Your response must be ONLY valid JSON that matches the structure described. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
         """).strip()
         
-    elif dataset == 'toxicity':
+    elif dataset == 'jigsaw_toxicity':
         return textwrap.dedent(f"""
             You are given the following full text:
             "{full_text}"
             From this text, the following phrases have been extracted:
             {phrases_str}
-            Classify each phrase into one of two categories:
-            "{classification_word}_phrases": Those phrases that are directly related to or express {classification_word.lower()} behaviour.
-            "neutral_phrases": Those phrases that are not directly related to {classification_word.lower()} behaviour.
-            {examples}
-            Now, classify the extracted phrases from the given text based on the classification word "{classification_word}":
+            
+            Your task is to classify the phrases into two sets, one which contains phrases causing the {classification_word}ity to occur
+            and the other containing the neutral ones.
+
+            1. Identify the key phrases or sentences that are most responsible for determining {classification_word}ity.
+            2. Add these phrases to {classification_word}_phrases.
+            3. Add the remaining phrases to neutral_phrases.
+
             Output your classification as a JSON object with two keys: "{classification_word.lower()}_phrases" and "neutral_phrases", each containing a list of the corresponding phrases.
             IMPORTANT: Your response must be ONLY valid JSON that matches the structure described. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
         """).strip()
@@ -66,11 +69,14 @@ def prompt_builder(phrases, full_text, classification_word="Sentiment", dataset 
             "{full_text}"
             From this text, the following phrases have been extracted:
             {phrases_str}
-            Classify each phrase into one of two categories:
-            "{classification_word}_phrases": Those phrases that are directly related to or express {classification_word.lower()} behaviour.
-            "neutral_phrases": Those phrases that are not directly related to {classification_word.lower()} behaviour.
-            {examples}
-            Now, classify the extracted phrases from the given text based on the classification word "{classification_word}":
+            
+            Your task is to classify the phrases into two sets, one which contains phrases which cause the sentence to be {classification_word}.
+            The other set must contain the neutral ones.
+
+            1. Identify the key phrases or sentences that are most responsible for being {classification_word}.
+            2. Add these phrases to {classification_word}_phrases.
+            3. Add the remaining phrases to neutral_phrases.
+
             Output your classification as a JSON object with two keys: "{classification_word.lower()}_phrases" and "neutral_phrases", each containing a list of the corresponding phrases.
             IMPORTANT: Your response must be ONLY valid JSON that matches the structure described. Do not include any explanatory text before or after the JSON. Begin your response with the opening curly brace '{{' and end with the closing curly brace '}}'.
         """).strip()
