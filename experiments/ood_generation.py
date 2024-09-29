@@ -10,14 +10,15 @@ from tqdm import tqdm
 import re
 from datasets import load_dataset
 from sklearn.preprocessing import LabelEncoder
+import argparse
 
 
 from transformers import T5Tokenizer, T5ForConditionalGeneration
 from sklearn.metrics.pairwise import cosine_distances, cosine_similarity
 
-from experiments.baseline_method.baseline import tokenize, get_embeddings
-from utilities import get_claude_response, get_claude_pre_prompt, save_results, set_seed, append_to_json
-from phrase_extraction import remove_punctuation_phrases, extract_phrases
+from baseline_method.baseline import tokenize, get_embeddings
+from utilities.general_utilities import get_claude_response, get_claude_pre_prompt, save_results, set_seed, append_to_json
+from utilities.phrase_extraction import remove_punctuation_phrases, extract_phrases
 from phrase_classification import prompt_builder
 
 def remove_non_ascii(text):
@@ -86,12 +87,45 @@ def get_cf_data(texts, labels, cf_labels = None, ood_mode = 'genre', dataset = '
             - The counterfactual {classification_word} should read naturally and maintain the original's tone and style. 
             For example, if the original tone is sarcastic, or funny, or formal, please maintain the same tone in your answer"
         """).strip()
-            print(prompt)
-            sys.exit()
             response = get_claude_response(prompt, mode='ood')
             with open('data/new.csv', 'a') as file:
                 if i == 0:
                     file.write('CF_Rev_Sentiment | CF_Sentiment \n')
+                file.write(response + '\n')
+        
+        else:
+            prompt = textwrap.dedent(f"""
+            You are given the following full {classification_word}:
+            "{texts.iloc[i]}"
+            with the following {ood_mode} behaviour:
+            {labels.iloc[i]}
+            Here, 0 denotes negative and 1 denotes positive {ood_mode} behaviour.
+            Your task is to create a counterfactual version of this {classification_word} by following these steps:
+
+            1. Identify the key phrases or sentences that are most responsible for determining the {classification_word}'s {ood_mode} behaviour.
+            2. Modify ONLY these {ood_mode} behaviour-determining parts to reverse the overall {ood_mode} behaviour of the {classification_word}.
+            3. Keep all other parts of the {classification_word}, including the sentences invariant of the {ood_mode} behaviour, as similar as possible.
+            4. Ensure that the modifications are minimal and targeted, focusing solely on reversing the {ood_mode} behaviour.
+            5. The overall structure, length, and style of the {classification_word} should remain as close to the original as possible.
+
+            Provide the output as a CSV row with the modified {classification_word} in the first column and the reversed {ood_mode} behaviour in the other 
+            (Write 'Negative' if 0, 'Positive' if 1).
+            
+            The columns must be separated using '|'. 
+            Do not print anything else.
+
+            IMPORTANT: 
+            - Only change what is absolutely necessary to reverse the {ood_mode} behaviour.
+            - Preserve all context, details about the {classification_word}, and non-{ood_mode} behaviour related content.
+            - The counterfactual {classification_word} should read naturally and maintain the original's tone and style. 
+            For example, if the original tone is sarcastic, or funny, or formal, please maintain the same tone in your answer"
+        """).strip()
+            if dataset == 'jailbreak':
+                prompt = f"Jailbreaking means {classification_word} where there is a deliberate attempt to trick or manipulate the output. " + prompt
+            response = get_claude_response(prompt, mode='ood')
+            with open(f"../data/ood_{dataset}.csv", 'a') as file:
+                if i == 0:
+                    file.write(f"CF_Comment_{ood_mode} | CF_{ood_mode} \n")
                 file.write(response + '\n')
         
         
@@ -128,6 +162,14 @@ def furthest_genre(genre_list, genre_embeddings):
         furthest_genres.append(list(probs.keys())[elem])
     return furthest_genres
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Script for phrase classification")
+    parser.add_argument('--dataset', type=str, required=False, help='imdb, jailbreak, jigsaw_toxicity, olid', default='imdb')
+    parser.add_argument('--ood_mode', type=str, required=False, help='genre, sentiment, jailbreak, toxic, offensive', default='sentiment')
+
+    args = parser.parse_args()
+    return args
+
 def main():
     args = parse_args()
     device = "cpu"
@@ -155,38 +197,39 @@ def main():
         elif dataset == 'jailbreak':
             splits = {'train': 'data/0124/toxic-chat_annotation_train.csv', 'test': 'data/0124/toxic-chat_annotation_test.csv'}
             data = pd.read_csv("hf://datasets/lmsys/toxic-chat/" + splits["test"])
-            data = data.sample(n=1000, random_state=random_seed)
+            col = ['user_input', 'jailbreaking']        
+            data = data.loc[(data['jailbreaking'] == 1) | (data['toxicity'] == 1)]
+            data = data.sample(n=5, random_state=random_seed)
             data = data.map(lambda x: x.replace('"', "'") if isinstance(x, str) else x)
-            data['text'] = data['text'].apply(lambda x: f'"{x}"' if isinstance(x, str) else x)
+            data[col[0]] = data[col[0]].apply(lambda x: f'"{x}"' if isinstance(x, str) else x)
             data = data.map(remove_non_ascii)
-            data['text'] = data['text'].str.replace(r'<.*?>', '', regex=True)
+            data[col[0]] = data[col[0]].str.replace(r'<.*?>', '', regex=True)
             data = data.replace('\n','', regex=True)
-            col = ['text', 'label']
+            classification_word = 'input'
+
+        elif dataset == 'jigsaw_toxicity':
+            data = pd.read_csv('../data/toxicity_data/train.csv')
+            data = data.sample(n=1000, random_state=random_seed)
+            col = ['comment_text', 'toxic']
+            data = data.map(lambda x: x.replace('"', "'") if isinstance(x, str) else x)
+            data[col[0]] = data[col[0]].apply(lambda x: f'"{x}"' if isinstance(x, str) else x)
+            data = data.map(remove_non_ascii)
+            data[col[0]] = data[col[0]].str.replace(r'<.*?>', '', regex=True)
+            data = data.replace('\n','', regex=True)
             classification_word = 'comment'
 
-        elif dataset == 'toxicity':
-            data = pd.read_csv('data/toxicity_data/test.csv')
-            data = data.sample(n=1000, random_state=random_seed)
-            data = data.map(lambda x: x.replace('"', "'") if isinstance(x, str) else x)
-            data['content'] = data['content'].apply(lambda x: f'"{x}"' if isinstance(x, str) else x)
-            data = data.map(remove_non_ascii)
-            data['content'] = data['content'].str.replace(r'<.*?>', '', regex=True)
-            data = data.replace('\n','', regex=True)
-            col = ['content', 'label']
-            classification_word = 'review'
-
         elif dataset == 'olid':
-            data = pd.read_csv('data/olid_data/olid-training-v1.0.tsv', sep='\t')
-            data = data.sample(n=1000, random_state=random_seed)
+            data = pd.read_csv('../data/olid_data/olid-training-v1.0.tsv', sep='\t')
+            data = data.sample(n=5, random_state=random_seed)
+            data = data.replace('@USER','', regex=True)
             lb = LabelEncoder() 
             col = ['tweet', 'subtask_a']
             data[col[1]] = lb.fit_transform(data[col[1]])
             data = data.map(lambda x: x.replace('"', "'") if isinstance(x, str) else x)
-            data['user_input'] = data['user_input'].apply(lambda x: f'"{x}"' if isinstance(x, str) else x)
+            data[col[0]] = data[col[0]].apply(lambda x: f'"{x}"' if isinstance(x, str) else x)
             data = data.map(remove_non_ascii)
-            data['user_input'] = data['user_input'].str.replace(r'<.*?>', '', regex=True)
+            data[col[0]] = data[col[0]].str.replace(r'<.*?>', '', regex=True)
             data = data.replace('\n','', regex=True)
-            col = ['user_input', 'toxicity']
             classification_word = 'comment'
     
     tok_for_embed = tokenize(data, col=col[0])
@@ -220,8 +263,8 @@ def main():
             cf_genre_list.append(cf_genre)
         get_cf_data(data['Text'], data['imdbGenres'], cf_genre_list)
         
-    elif ood_mode == 'sentiment':
-        get_cf_data(data[col[0]], data[col[1]], ood_mode='sentiment', dataset=dataset, classification_word = classification_word)
+    else:
+        get_cf_data(data[col[0]], data[col[1]], ood_mode=ood_mode, dataset=dataset, classification_word = classification_word)
         
 if __name__ == "__main__":
     main()

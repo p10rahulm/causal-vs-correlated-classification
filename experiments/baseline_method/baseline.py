@@ -13,10 +13,8 @@ from transformers import T5Tokenizer, T5ForConditionalGeneration
 from torch.utils.data import DataLoader, Dataset
 import torch.optim as optim
 
-# import matplotlib
-
-# matplotlib.style.use('ggplot')
-
+import sys
+sys.path.append('../')
 from models.binary_head import MultiHeadBinaryModel
 
 class BinaryDataset(Dataset):
