@@ -34,8 +34,8 @@ def run_regularized_imdb_experiment():
         # Load Causal Neutral classifier (for causal phrase extraction)
         causal_neutral_model_path = "trained_models/imdb_sentiment_wz_bert_10epochs/sentiment/CausalNeutralClassifier_2hidden_2024-09-02_19-50-51.pth"
         causal_neutral_model = load_trained_model(causal_neutral_model_path,
-                                                  model_variations["bert"]["2_hidden"]("Sentiment",
-                                                                                       freeze_encoder=True)).to(device)
+                                                model_variations["bert"]["2_hidden"]("Sentiment",
+                                                                                    freeze_encoder=True)).to(device)
         causal_tokenizer = causal_neutral_model.tokenizer
     except Exception as e:
         logging.error(f"Error loading causal neutral model: {e}")
