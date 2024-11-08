@@ -32,7 +32,7 @@ metrics = ["Train Loss", "Test Loss", "Accuracy", "Precision", "Recall", "F1"]
 fig, axes = plt.subplots(2, 3, figsize=(18, 10))
 fig.suptitle("Model Performance Comparison", fontsize=16)
 for metric, ax in zip(metrics, axes.flatten()):
-        sns.lineplot(data=df, x="Epochs", y=metric, hue="Model", size = "Method" , markers=True, ax=ax)
+        sns.lineplot(data=final_df, x="Epochs", y=metric, hue="Model", size = "Method" , markers=True, ax=ax)
         ax.set_title(f"{metric} Over Epochs")
         ax.set_ylabel(metric)
         ax.set_xlabel("Epochs")
