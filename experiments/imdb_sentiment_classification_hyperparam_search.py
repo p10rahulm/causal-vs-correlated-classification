@@ -40,7 +40,7 @@ def run_experiments():
 
     with open(results_file, 'w', newline='') as csvfile:
         fieldnames = ['model', 'optimizer', 'hidden_layers', 'learning_rate', 'epoch', 'train_loss', 'val_loss',
-                      'accuracy', 'precision', 'recall', 'f1', 'best_val_loss', 'best_accuracy', 'best_f1']
+                    'accuracy', 'precision', 'recall', 'f1', 'best_val_loss', 'best_accuracy', 'best_f1']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
 
@@ -61,8 +61,8 @@ def run_experiments():
 
             # Create and run trainer
             trainer = Trainer(model, data_module, optimizer_name=optimizer_name,
-                              optimizer_params=optimizer_config['params'],
-                              batch_size=batch_size, num_epochs=num_epochs)
+                            optimizer_params=optimizer_config['params'],
+                            batch_size=batch_size, num_epochs=num_epochs)
 
             # Prepare data before training loop
             trainer.prepare_data()
