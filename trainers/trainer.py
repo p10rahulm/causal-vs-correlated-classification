@@ -27,9 +27,9 @@ from data_loaders.common.base_data_module import BaseDataModule
 
 class Trainer:
     def __init__(self, model: nn.Module, data_module: Union[BaseDataModule, Any], optimizer_name: str = 'adam',
-                 dataset_name: str = 'imdb',
-                 optimizer_params: Dict[str, Any] = None, batch_size: int = 32,
-                 num_epochs: int = 3, device: Union[str, None] = None, patience: int = 3):
+                dataset_name: str = 'imdb',
+                optimizer_params: Dict[str, Any] = None, batch_size: int = 32,
+                num_epochs: int = 3, device: Union[str, None] = None, patience: int = 3):
         self.model = model
         self.data_module = data_module
         self.batch_size = batch_size

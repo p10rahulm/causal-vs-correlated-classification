@@ -237,11 +237,11 @@ def main():
                 input_file_path = config['cn_phrase_classification_data']
                 causal_neutral_data_module = CausalNeutralDataModule(input_file_path , "Sentiment")
                 causal_neutral_model, _ = train_causal_neutral(config, model_name, causal_neutral_data_module)                
-                       
+                    
             # Model 3: Causal Phrase Sentiment Classifier
             causal_phrase_data_module = CausalPhraseDataModule(base_data_module=base_data_module, 
-                                                               classification_word="Sentiment", 
-                                                               text_column='text', label_column='label')
+                                                            classification_word="Sentiment", 
+                                                            text_column='text', label_column='label')
             # causal_phrase_data_module = CausalPhraseIMDBDataModule()
             causal_phrase_data_module.set_causal_neutral_model(causal_neutral_model, causal_neutral_model.tokenizer)
             train_causal_classifier(config, causal_phrase_data_module, model_name, epoch)

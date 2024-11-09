@@ -1,0 +1,10 @@
+Table 1 Done!
+Table 2 Done!
+Table 3 Found : outputs/ood_sentiment_test/results_20240916_160122.csv
+Table 4 Found : outputs/ood_sentiment_test/results_20240916_150508.csv
+Table 5 Found : outputs/ood_sentiment_test/results_20240919_141957.csv (OOD Genres)
+Table 6 Found : outputs/ood_sentiment_test/results_20240919_141957.csv (OOD Sentiment)
+Table 7 Found : outputs/ood_sentiment_test/results_20240919_141957.csv (CF Ltd)
+Table 8 Found : outputs/ood_sentiment_test_lambda/results_20240923_080818.csv (OOD Genres)
+Table 9 Found : outputs/ood_sentiment_test_lambda/results_20240923_080818.csv (OOD Sentiment)
+Table 10 Found : outputs/ood_sentiment_test_lambda/results_20240923_080818.csv (CF Ltd)
