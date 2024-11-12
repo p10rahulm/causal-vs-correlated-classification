@@ -1,4 +1,4 @@
-# Methods : Baseline 1, Baseline 2, Regularized
+# Methods : Regularized
 # Dataset : OOD Sentiment
 
 import pandas as pd
@@ -9,54 +9,21 @@ import sys
 
 filename = "../outputs/ood_sentiment_test_lambda/results_20240923_080818.csv"
 df = pd.read_csv(filename)
-print(df.head())
-# df.columns = ["Dataset", "Model", "Method", "Epochs", "Test Loss", "Accuracy", "Precision", "Recall", "F1"]
-# metrics = ["Test Loss", "Accuracy", "Precision", "Recall", "F1"]
-# fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-# fig.suptitle("Model Performance Comparison", fontsize=16)
-# for metric, ax in zip(metrics, axes.flatten()):
-#         sns.lineplot(data=df, x="Epochs", y=metric, hue="Model", markers=True, ax=ax)
-#         ax.set_title(f"{metric} Over Epochs")
-#         ax.set_ylabel(metric)
-#         ax.set_xlabel("Epochs")
-#         ax.legend(title="Model", bbox_to_anchor=(1.05, 1), loc='upper left')
-
-# plt.tight_layout(rect=[0, 0, 0.9, 0.95])
-# plt.savefig('images/table_5-1.png')
-# plt.show()
-
-filename = "../outputs/ood_sentiment_test_lambda/results_20240923_080818.csv"
-df = pd.read_csv(filename)
-print(df.head())
-# df.columns = ["Dataset", "Model", "Method", "Epochs", "Test Loss", "Accuracy", "Precision", "Recall", "F1"]
-# metrics = ["Test Loss", "Accuracy", "Precision", "Recall", "F1"]
-# fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-# fig.suptitle("Model Performance Comparison", fontsize=16)
-# for metric, ax in zip(metrics, axes.flatten()):
-#         sns.lineplot(data=df, x="Epochs", y=metric, hue="Model", markers=True, ax=ax)
-#         ax.set_title(f"{metric} Over Epochs")
-#         ax.set_ylabel(metric)
-#         ax.set_xlabel("Epochs")
-#         ax.legend(title="Model", bbox_to_anchor=(1.05, 1), loc='upper left')
-
-# plt.tight_layout(rect=[0, 0, 0.9, 0.95])
-# plt.savefig('images/table_5-2.png')
-# plt.show()
-
-filename = "../outputs/ood_sentiment_test_lambda/results_20240923_080818.csv"
-df = pd.read_csv(filename)
-print(df.head())
-# df.columns = ["Dataset", "Model", "Method", "Epochs", "Test Loss", "Accuracy", "Precision", "Recall", "F1"]
-# metrics = ["Test Loss", "Accuracy", "Precision", "Recall", "F1"]
-# fig, axes = plt.subplots(2, 3, figsize=(18, 10))
-# fig.suptitle("Model Performance Comparison", fontsize=16)
-# for metric, ax in zip(metrics, axes.flatten()):
-#         sns.lineplot(data=df, x="Epochs", y=metric, hue="Model", markers=True, ax=ax)
-#         ax.set_title(f"{metric} Over Epochs")
-#         ax.set_ylabel(metric)
-#         ax.set_xlabel("Epochs")
-#         ax.legend(title="Model", bbox_to_anchor=(1.05, 1), loc='upper left')
-
-# plt.tight_layout(rect=[0, 0, 0.9, 0.95])
-# plt.savefig('images/table_5-3.png')
-# plt.show()
+df.columns = ["Dataset", "Model", "Epochs", "Lambda", "Test Loss", "Accuracy", "Precision", "Recall", "F1"]
+df = df.replace(to_replace="electra_small_discriminator", value="electra")
+metrics = ["Test Loss", "Accuracy", "Precision", "Recall", "F1"]
+for dataset in set(df['Dataset']):
+    temp_df = df[df['Dataset'] == dataset]
+    for model in ['roberta', 'albert', 'distilbert', 'bert', 'electra']:
+        fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+        fig.suptitle("Performance Comparisons | Regularized | " + dataset +" Dataset", fontsize=10)
+        for metric, ax in zip(metrics, axes.flatten()):
+                sns.barplot(data=temp_df[temp_df['Model'] == model], x="Lambda", y=metric, hue="Epochs",  ax=ax, width=0.35)
+                ax.set_title(f"{metric} for " + model)
+                ax.set_ylabel(metric)
+                ax.tick_params(axis='x', rotation=40)
+                ax.set_xlabel("Lambda")
+                ax.legend(title="Epochs", bbox_to_anchor=(1.05, 1), loc='upper left')
+        plt.tight_layout(rect=[0, 0, 0.9, 0.95])
+        plt.savefig('images/table_6' +'_' + model + '_' + dataset + '.png')
+        plt.show()
