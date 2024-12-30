@@ -42,8 +42,7 @@ def run_regularized_imdb_experiment():
         return
 
     # Experiment parameters
-    models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
-    models = ["xlnet_large"]
+    models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta"]
     
     epochs = [5, 10]
     classification_word = "Sentiment"

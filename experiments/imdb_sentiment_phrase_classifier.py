@@ -5,6 +5,9 @@ import sys
 import csv
 from datetime import datetime
 
+# Set CUDA DEVICE
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
 while not (project_root / '.git').exists() and project_root != project_root.parent:
@@ -37,7 +40,7 @@ def get_hyperparameters(model_name, hyperparams):
 
 def run_imdb_sentiment_experiment():
     # Experiment parameters
-    models = ["electra_small_discriminator", "distilbert", "t5", "roberta", "bert", "albert"]
+    models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta"]
     classification_word = "Sentiment"
     epochs = [5, 10]
     batch_size = 4
@@ -71,7 +74,8 @@ def run_imdb_sentiment_experiment():
                 print(f"Running experiment: {model_name}, epochs={num_epochs}")
 
                 # Create model
-                model = model_variations[model_name][hidden_layer](classification_word, freeze_encoder=True)
+                # model = model_variations[model_name][hidden_layer](classification_word, freeze_encoder=True)
+                model = model_variations[model_name][hidden_layer](classification_word)
 
                 # Update optimizer config
                 optimizer_config = optimizer_configs[optimizer_name].copy()

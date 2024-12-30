@@ -1,7 +1,5 @@
 from models.causal_neutral_model_template import create_model
 import torch
-from models.t5_for_classification import T5ForClassification
-from transformers import T5EncoderModel, T5Tokenizer
 from typing import Dict, Any, List, Callable
 from functools import partial
 
@@ -64,11 +62,8 @@ def create_model_variations() -> Dict[str, Dict[str, Callable]]:
         "deberta": "microsoft/deberta-base",
         "albert": "albert-base-v2",
         "electra_small_discriminator": "google/electra-small-discriminator",
-        "deberta_small": "microsoft/deberta-v3-small",
         "bart": "facebook/bart-base",
         "xlnet": "xlnet-base-cased",
-        "deberta_v3": "microsoft/deberta-v3-base",
-        "albert_tiny": "albert-tiny-v2",
         "minilm": "microsoft/MiniLM-L12-H384-uncased",
         "tinybert": "huawei-noah/TinyBERT_General_4L_312D",
         "distilroberta": "distilroberta-base"
