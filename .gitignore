@@ -13,6 +13,7 @@ logs/imdb_training/
 .idea/
 _claude_key.txt
 
+myenv
 
 # User-specific stuff
 .idea/**/workspace.xml

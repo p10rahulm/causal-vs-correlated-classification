@@ -1,31 +1,25 @@
-# models/causal_neutral_model_variations.py
-
-from transformers import T5EncoderModel, T5Tokenizer
 from models.causal_neutral_model_template import create_model
 import torch
 from models.t5_for_classification import T5ForClassification
+from transformers import T5EncoderModel, T5Tokenizer
+from typing import Dict, Any, List, Callable
+from functools import partial
 
+def get_device():
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+    print(f"Using device: {device}")
+    return device
 
-def create_model_with_device(model_name, classification_word, hidden_layers, freeze_encoder=True):
-    """
-    Creates a model with the specified device (GPU or CPU).
-    """
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+def create_custom_model(model_name, classification_word, hidden_layers, freeze_encoder=True, cuda_device=0):
+    device = get_device()
     return create_model(model_name, classification_word, hidden_layers, device, freeze_encoder)
 
-
-def create_custom_model(model_name, classification_word, hidden_layers, freeze_encoder=True):
-    """
-    General-purpose function to create models using create_model_with_device.
-    """
-    return create_model_with_device(model_name, classification_word, hidden_layers, freeze_encoder)
-
-
-def create_custom_t5_model(model_name, classification_word, hidden_layers, freeze_encoder=True):
-    """
-    Specialized function to create T5 models.
-    """
+def create_custom_t5_model(model_name, classification_word, hidden_layers, freeze_encoder=True, cuda_device=0):
     try:
+        device = get_device(cuda_device)
         t5_encoder = T5EncoderModel.from_pretrained(model_name)
         tokenizer = T5Tokenizer.from_pretrained(model_name)
 
@@ -39,142 +33,66 @@ def create_custom_t5_model(model_name, classification_word, hidden_layers, freez
         if freeze_encoder:
             model.freeze_encoder()
 
-        return model.to_device('cuda' if torch.cuda.is_available() else 'cpu')
+        return model.to(device)
 
     except ImportError as e:
         print(f"Error creating T5 model: {e}")
         print("Please install SentencePiece by running: pip install sentencepiece")
         return None
 
+def create_model_factory(model_path: str, cuda_device: int = 0) -> Callable:
+    """Creates a partial function for model creation with a specific model path and device."""
+    return partial(create_custom_model, model_path, cuda_device=cuda_device)
 
-# Create variations for each model type
-model_variations = {
-    # Base Models
-    "distilbert": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("distilbert-base-uncased", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("distilbert-base-uncased", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("distilbert-base-uncased", cw, [256, 128], freeze_encoder)
-    },
-    "roberta": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("roberta-base", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("roberta-base", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("roberta-base", cw, [256, 128], freeze_encoder)
-    },
-    "bert": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("bert-base-uncased", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("bert-base-uncased", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("bert-base-uncased", cw, [256, 128], freeze_encoder)
-    },
-    "deberta": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-base", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-base", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-base", cw, [256, 128], freeze_encoder)
-    },
-    "albert": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("albert-base-v2", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("albert-base-v2", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("albert-base-v2", cw, [256, 128], freeze_encoder)
-    },
-    "electra_small_discriminator": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("google/electra-small-discriminator", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("google/electra-small-discriminator", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("google/electra-small-discriminator", cw, [256, 128], freeze_encoder)
-    },
-    "deberta_small": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-v3-small", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-v3-small", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-v3-small", cw, [256, 128], freeze_encoder)
-    },
-    "bart": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("facebook/bart-base", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("facebook/bart-base", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("facebook/bart-base", cw, [256, 128], freeze_encoder)
-    },
-    "xlnet": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("xlnet-base-cased", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("xlnet-base-cased", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("xlnet-base-cased", cw, [256, 128], freeze_encoder)
-    },
+def generate_hidden_layer_configs() -> Dict[str, List[int]]:
+    """Generate standard hidden layer configurations."""
+    return {
+        "0_hidden": [],
+        "1_hidden": [256],
+        "2_hidden": [256, 128],
+        "2_hidden_wide": [512, 256],
+        "3_hidden": [512, 256, 128]
+    }
+
+def create_model_variations() -> Dict[str, Dict[str, Callable]]:
+    """Create model variations with standard configurations and specified CUDA device."""
     
-    # Additional Small Models
-    "deberta_v3": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-v3-base", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-v3-base", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-v3-base", cw, [256, 128], freeze_encoder)
-    },
-    "albert_tiny": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("albert-tiny-v2", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("albert-tiny-v2", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("albert-tiny-v2", cw, [256, 128], freeze_encoder)
-    },
-    "minilm": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/MiniLM-L12-H384-uncased", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/MiniLM-L12-H384-uncased", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/MiniLM-L12-H384-uncased", cw, [256, 128], freeze_encoder)
-    },
-    "tinybert": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("huawei-noah/TinyBERT_General_4L_312D", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("huawei-noah/TinyBERT_General_4L_312D", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("huawei-noah/TinyBERT_General_4L_312D", cw, [256, 128], freeze_encoder)
-    },
-    "distilroberta": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("distilroberta-base", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("distilroberta-base", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("distilroberta-base", cw, [256, 128], freeze_encoder)
-    },
+    base_models = {
+        "distilbert": "distilbert-base-uncased",
+        "bert": "bert-base-uncased",
+        "roberta": "roberta-base",
+        "deberta": "microsoft/deberta-base",
+        "albert": "albert-base-v2",
+        "electra_small_discriminator": "google/electra-small-discriminator",
+        "deberta_small": "microsoft/deberta-v3-small",
+        "bart": "facebook/bart-base",
+        "xlnet": "xlnet-base-cased",
+        "deberta_v3": "microsoft/deberta-v3-base",
+        "albert_tiny": "albert-tiny-v2",
+        "minilm": "microsoft/MiniLM-L12-H384-uncased",
+        "tinybert": "huawei-noah/TinyBERT_General_4L_312D",
+        "distilroberta": "distilroberta-base"
+    }
+    
+    # Get standard hidden layer configurations
+    hidden_configs = generate_hidden_layer_configs()
+    
+    # Generate model variations
+    variations = {}
+    
+    for model_name, model_path in base_models.items():
+        variations[model_name] = {}
+        for config_name, hidden_layers in hidden_configs.items():
+            def create_model_fn(cw, model_path=model_path, hidden_layers=hidden_layers):
+                return create_custom_model(
+                    model_name=model_path,
+                    classification_word=cw,
+                    hidden_layers=hidden_layers,
+                    freeze_encoder=True
+                )
+            variations[model_name][config_name] = create_model_fn
+    return variations
 
-    # Large Models
-    "roberta_large": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("roberta-large", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("roberta-large", cw, [512], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("roberta-large", cw, [512, 256], freeze_encoder)
-    },
-    "bert_large": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("bert-large-uncased", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("bert-large-uncased", cw, [512], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("bert-large-uncased", cw, [512, 256], freeze_encoder)
-    },
-    "deberta_v3_large": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-v3-large", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-v3-large", cw, [512], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("microsoft/deberta-v3-large", cw, [512, 256], freeze_encoder)
-    },
-    "albert_xxlarge": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("albert-xxlarge-v2", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("albert-xxlarge-v2", cw, [512], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("albert-xxlarge-v2", cw, [512, 256], freeze_encoder)
-    },
-    "electra_large_discriminator": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("google/electra-large-discriminator", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("google/electra-large-discriminator", cw, [512], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("google/electra-large-discriminator", cw, [512, 256], freeze_encoder)
-    },
-    "xlnet_large": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_model("xlnet-large-cased", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_model("xlnet-large-cased", cw, [512], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_model("xlnet-large-cased", cw, [512, 256], freeze_encoder)
-    },
+# Create the model variations with default CUDA:0
+model_variations = create_model_variations()
 
-    # T5 Models (Special Case)
-    "t5": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_t5_model("t5-small", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_t5_model("t5-small", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_t5_model("t5-small", cw, [256, 128], freeze_encoder)
-    },
-    "t5_base": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_t5_model("t5-base", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_t5_model("t5-base", cw, [256], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_t5_model("t5-base", cw, [256, 128], freeze_encoder)
-    },
-    "t5_large": {
-        "0_hidden": lambda cw, freeze_encoder=True: create_custom_t5_model("t5-large", cw, [], freeze_encoder),
-        "1_hidden": lambda cw, freeze_encoder=True: create_custom_t5_model("t5-large", cw, [512], freeze_encoder),
-        "2_hidden": lambda cw, freeze_encoder=True: create_custom_t5_model("t5-large", cw, [512, 256], freeze_encoder)
-    },
-}
-
-# Usage example:
-# classification_word = "Sentiment"
-# model = model_variations["distilbert"]["1_hidden"](classification_word)
-# To create a model with unfrozen encoder:
-# model = model_variations["distilbert"]["1_hidden"](classification_word, False)
