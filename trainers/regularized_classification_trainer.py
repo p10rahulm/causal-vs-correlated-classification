@@ -41,6 +41,7 @@ class RegularizedTrainer:
         device: Any = None,
         lambda_reg: float = 0.1,
         drop_lr_on_plateau: bool = True,
+        classification_word = "Sentiment",
         **kwargs
     ):
         """
@@ -72,6 +73,7 @@ class RegularizedTrainer:
         self.num_epochs = num_epochs
         self.device = device if device is not None else torch.device("cpu")
         self.lambda_reg = lambda_reg
+        self.classification_word = classification_word
 
         # Move models to device
         self.model_ref.to(self.device)
