@@ -21,11 +21,13 @@ from optimizers.optimizer_params import optimizer_configs
 
 def run_imdb_sentiment_experiment():
     # Experiment parameters
-    # models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta"]
+    models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", "modern_bert"]
     # models = ["electra_small_discriminator", "distilbert"]
-    models = ["roberta"]
+    # models = ["roberta"]
     # models = ["bert", "albert"]
+    # models = ["albert"]
     # models = ["deberta"]
+    # models = ["modern_bert"]
     classification_word = "Sentiment"
     epochs = [5, 10]
     batch_size = 16

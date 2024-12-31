@@ -66,7 +66,8 @@ def create_model_variations() -> Dict[str, Dict[str, Callable]]:
         "xlnet": "xlnet-base-cased",
         "minilm": "microsoft/MiniLM-L12-H384-uncased",
         "tinybert": "huawei-noah/TinyBERT_General_4L_312D",
-        "distilroberta": "distilroberta-base"
+        "distilroberta": "distilroberta-base",
+        "modern_bert": "answerdotai/ModernBERT-base"
     }
     
     # Get standard hidden layer configurations

@@ -6,7 +6,7 @@ import csv
 from datetime import datetime
 
 # Set CUDA DEVICE
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
@@ -40,10 +40,10 @@ def get_hyperparameters(model_name, hyperparams):
 
 def run_imdb_sentiment_experiment():
     # Experiment parameters
-    models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta"]
+    models = ["deberta", "electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "modern_bert"]
     classification_word = "Sentiment"
     epochs = [5, 10]
-    batch_size = 4
+    batch_size = 16
 
     # Load hyperparameters
     hyperparams = load_hyperparameters('models/optimal_wz_classifier_validation_hyperparams.json')

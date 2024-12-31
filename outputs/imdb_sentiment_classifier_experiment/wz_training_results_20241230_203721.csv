@@ -1,0 +1,15 @@
+model,epochs,optimizer,hidden_layers,learning_rate,train_loss
+deberta,5,adamw,2_hidden,0.0005,0.34833215666246564
+deberta,10,adamw,2_hidden,0.0005,0.33145075433718385
+electra_small_discriminator,5,adamw,2_hidden,0.001,0.35164373555844786
+electra_small_discriminator,10,adamw,2_hidden,0.001,0.347945139294253
+distilbert,5,adamw,1_hidden,0.0005,0.2530560571766441
+distilbert,10,adamw,1_hidden,0.0005,0.24916560620473918
+roberta,5,adamw,2_hidden,0.0005,0.32030314841698504
+roberta,10,adamw,2_hidden,0.0005,0.3166357894624449
+bert,5,adamw,2_hidden,0.0005,0.26612865383345985
+bert,10,adamw,2_hidden,0.0005,0.2590242711154429
+albert,5,adamw,2_hidden,0.0005,0.3224376789614994
+albert,10,adamw,2_hidden,0.0005,0.31310388785718873
+modern_bert,5,adamw,2_hidden,0.0005,0.2942200857827086
+modern_bert,10,adamw,2_hidden,0.0005,0.27874539949637617

@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 import sys
 
+# Set CUDA DEVICE
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
 while not (project_root / '.git').exists() and project_root != project_root.parent:
@@ -30,7 +33,8 @@ def run_causal_phrase_sentiment_experiment():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load Causal Neutral classifier
-    causal_neutral_model_path = "trained_models/imdb_sentiment_wz_bert_10epochs/sentiment/CausalNeutralClassifier_2hidden_2024-09-02_19-50-51.pth"
+    # causal_neutral_model_path = "trained_models/imdb_sentiment_wz_bert_10epochs/sentiment/CausalNeutralClassifier_2hidden_2024-12-30_19-34-20.pth"
+    causal_neutral_model_path = "trained_models/imdb_sentiment_wz_distilbert_10epochs/sentiment/CausalNeutralClassifier_1hidden_2024-12-30_19-26-16.pth"
     causal_neutral_model = load_causal_neutral_classifier(causal_neutral_model_path).to(device)
 
     # Initialize tokenizer
