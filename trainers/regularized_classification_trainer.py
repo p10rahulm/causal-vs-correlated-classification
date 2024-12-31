@@ -238,6 +238,7 @@ class RegularizedTrainer:
 
         history = []
         for epoch in range(self.num_epochs):
+            train_loader = self.data_module.get_full_train_dataloader()
             epoch_stat = self._train_one_epoch(train_loader, epoch)
             self.model_ref.load_state_dict(self.model_theta.state_dict())
             for param in self.model_ref.parameters():

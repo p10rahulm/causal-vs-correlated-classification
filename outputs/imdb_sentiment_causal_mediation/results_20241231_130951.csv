@@ -1,6 +1,0 @@
-model,lambda_reg,epoch,train_loss,val_loss,val_accuracy,val_precision,val_recall,val_f1
-roberta,0.01,1,0.3451839963543415,,,,,
-roberta,0.01,2,0.0,,,,,
-roberta,0.01,3,0.0,,,,,
-roberta,0.01,4,0.0,,,,,
-roberta,0.01,5,0.0,,,,,

@@ -74,7 +74,7 @@ def run_causal_mediation_experiment():
 
     # Which subset of models to run?
     model_list = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", "modern_bert"]
-    # model_list = ["electra_small_discriminator", "modern_bert"]
+    model_list = ["electra_small_discriminator", "modern_bert"]
     # model_list = ["roberta", "distilbert"]
     # model_list = ["bert", "albert"]
     # model_list = ["deberta"]
@@ -183,7 +183,7 @@ def run_causal_mediation_experiment():
                 # 5d) Optionally, save the final policy model after these 5 epochs
                 save_trained_model(
                     trainer,
-                    name_prefix=f"imdb_causal_mediation_{model_name}_lambda{lambda_reg}",
+                    dataset_name=f"imdb_causal_mediation_{model_name}_lambda{lambda_reg}",
                     num_hidden_layers=1
                 )
 
