@@ -303,7 +303,7 @@ if __name__ == "__main__":
     classification_word = "Sentiment"
     model = model_variations["distilbert"]["1_hidden"](classification_word, freeze_encoder=True)
 
-    from data_loaders.wz_data_loaders.sentiment_imdb import CausalNeutralDataModule
+    from data_loaders.imdb_sentiment.phrase_classification_dataloader import CausalNeutralDataModule
 
     file_path = "outputs/imdb_train_sentiment_analysis.json"
     sentiment_imdb_loader = CausalNeutralDataModule(file_path, classification_word)

@@ -18,82 +18,9 @@ import torch.nn.functional as F
 from tqdm import tqdm
 
 
-class PrecomputedCausalPhraseDataset(Dataset):
-    def __init__(self, dataset, causal_neutral_model, eta_model, causal_tokenizer, eta_tokenizer):
+class SimpleDataset(Dataset):
+    def __init__(self, dataset):
         self.dataset = dataset
-        self.causal_neutral_model = causal_neutral_model
-        self.eta_model = eta_model
-        self.causal_tokenizer = causal_tokenizer
-        self.eta_tokenizer = eta_tokenizer
-        self.device = next(causal_neutral_model.parameters()).device
-
-        self.causal_phrases = []
-        self.causal_probs = []
-        self.eta_probs = []
-
-        self._precompute_all()
-
-    def _precompute_all(self):
-        print("Precomputing causal phrases and probabilities...")
-        for idx in tqdm(range(len(self.dataset)), desc="Processing reviews", unit="review"):
-            item = self.dataset[idx]
-            review, label = item['text'], item['label']
-
-            causal_phrase = self._extract_causal_phrase(review)
-            causal_prob = self._compute_causal_prob(causal_phrase)
-            eta_prob = self._compute_eta_prob(review)
-
-            self.causal_phrases.append(causal_phrase)
-            self.causal_probs.append(causal_prob)
-            self.eta_probs.append(eta_prob)
-
-    def _extract_causal_phrase(self, review):
-        phrases = remove_punctuation_phrases(extract_phrases(review))
-        classifications = self.classify_phrases(phrases)
-        causal_phrases = [phrase for phrase, cls in zip(phrases, classifications) if cls == 1]
-
-        if not causal_phrases:
-            sentences = review.split('.')
-            if sentences:
-                causal_phrases = [sentences[0].strip()]
-            else:
-                words = review.split()
-                causal_phrases = [' '.join(words[:50])]
-
-        return ' '.join(causal_phrases)
-
-    def classify_phrases(self, phrases):
-        inputs = self.causal_tokenizer(phrases, truncation=True, padding=True, return_tensors="pt")
-        inputs = {k: v.to(self.device) for k, v in inputs.items() if k != 'token_type_ids'}
-
-        with torch.no_grad():
-            outputs = self.causal_neutral_model(**inputs)
-            logits = outputs.logits if hasattr(outputs, 'logits') else outputs
-            predictions = torch.argmax(logits, dim=1)
-
-        return predictions.cpu().numpy()
-
-    def _compute_causal_prob(self, causal_phrase):
-        inputs = self.eta_tokenizer(causal_phrase, truncation=True, padding=True, return_tensors="pt")
-        inputs = {k: v.to(self.device) for k, v in inputs.items() if k != 'token_type_ids'}
-
-        with torch.no_grad():
-            outputs = self.eta_model(**inputs)
-            logits = outputs.logits if hasattr(outputs, 'logits') else outputs
-            probs = F.softmax(logits, dim=1)
-
-        return probs.squeeze().cpu()
-
-    def _compute_eta_prob(self, review):
-        inputs = self.eta_tokenizer(review, truncation=True, padding=True, return_tensors="pt")
-        inputs = {k: v.to(self.device) for k, v in inputs.items() if k != 'token_type_ids'}
-
-        with torch.no_grad():
-            outputs = self.eta_model(**inputs)
-            logits = outputs.logits if hasattr(outputs, 'logits') else outputs
-            probs = F.softmax(logits, dim=1)
-
-        return probs.squeeze().cpu()
 
     def __len__(self):
         return len(self.dataset)
@@ -102,17 +29,8 @@ class PrecomputedCausalPhraseDataset(Dataset):
         item = self.dataset[idx]
         return {
             'text': item['text'],
-            'causal_phrase': self.causal_phrases[idx],
-            'causal_prob': self.causal_probs[idx],
-            'eta_prob': self.eta_probs[idx],
             'label': item['label']
         }
-
-    def set_debug_mode(self, mode):
-        self.debug_mode = mode
-
-
-
 
 
 class PrecomputedCausalPhraseDataset(Dataset):
@@ -205,12 +123,13 @@ class PrecomputedCausalPhraseDataset(Dataset):
 
 
 class CausalPhraseWithOriginalIMDBDataModule(IMDBDataModule):
-    def __init__(self, classification_word="Sentiment", val_split=0.1):
+    def __init__(self, classification_word="Sentiment", val_split=0.1, batch_size=16):
         super().__init__(classification_word, val_split)
         self.causal_neutral_model = None
         self.eta_model = None
         self.causal_tokenizer = None
         self.eta_tokenizer = None
+        self.batch_size = batch_size
 
     def set_models(self, causal_model, eta_model):
         self.causal_neutral_model = causal_model
@@ -222,16 +141,18 @@ class CausalPhraseWithOriginalIMDBDataModule(IMDBDataModule):
         if self.causal_neutral_model is None or self.eta_model is None:
             raise ValueError("Models not set. Call set_models first.")
 
+        batch_size = batch_size or self.batch_size
         train_dataset = PrecomputedCausalPhraseDataset(self.train_dataset, self.causal_neutral_model, self.eta_model,
-                                                       self.causal_tokenizer, self.eta_tokenizer)
+                                                       self.causal_tokenizer, self.eta_tokenizer, batch_size=batch_size)
         val_dataset = PrecomputedCausalPhraseDataset(self.val_dataset, self.causal_neutral_model, self.eta_model,
-                                                     self.causal_tokenizer, self.eta_tokenizer)
-
+                                                     self.causal_tokenizer, self.eta_tokenizer, batch_size=batch_size)
+        
+        
         print(f"Train dataset size: {len(train_dataset)}")
         print(f"Validation dataset size: {len(val_dataset)}")
 
-        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=self.collate_fn)
-        val_loader = DataLoader(val_dataset, batch_size=batch_size, collate_fn=self.collate_fn)
+        train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=self.train_collate_fn)
+        val_loader = DataLoader(val_dataset, batch_size=batch_size, collate_fn=self.train_collate_fn)
 
         return train_loader, val_loader
 
@@ -239,25 +160,26 @@ class CausalPhraseWithOriginalIMDBDataModule(IMDBDataModule):
         if self.causal_neutral_model is None or self.eta_model is None:
             raise ValueError("Models not set. Call set_models first.")
 
-        test_dataset = PrecomputedCausalPhraseDataset(self.test_dataset, self.causal_neutral_model, self.eta_model,
-                                                      self.causal_tokenizer, self.eta_tokenizer)
+        batch_size = batch_size or self.batch_size
+        test_dataset = SimpleDataset(self.test_dataset)
+        return DataLoader(test_dataset, batch_size=batch_size, collate_fn=self.test_collate_fn)
 
-        return DataLoader(test_dataset, batch_size=batch_size, collate_fn=self.collate_fn)
-
-    def get_full_train_dataloader(self, tokenizer, batch_size):
+    def get_full_train_dataloader(self, batch_size):
         if self.causal_neutral_model is None:
             raise ValueError("Causal Neutral model not set. Call set_causal_neutral_model first.")
 
+        batch_size = batch_size or self.batch_size
+
         full_dataset = ConcatDataset([
             PrecomputedCausalPhraseDataset(self.train_dataset, self.causal_neutral_model, self.eta_model,
-                                           self.causal_tokenizer, self.eta_tokenizer),
+                                           self.causal_tokenizer, self.eta_tokenizer, batch_size=batch_size),
             PrecomputedCausalPhraseDataset(self.val_dataset, self.causal_neutral_model, self.eta_model,
-                                           self.causal_tokenizer, self.eta_tokenizer)
+                                           self.causal_tokenizer, self.eta_tokenizer, batch_size=batch_size)
         ])
 
-        return DataLoader(full_dataset, batch_size=batch_size, collate_fn=self.collate_fn)
+        return DataLoader(full_dataset, batch_size=batch_size, collate_fn=self.train_collate_fn)
 
-    def collate_fn(self, batch):
+    def train_collate_fn(self, batch):
         original_reviews = [item['text'] for item in batch]
         causal_phrases = [item['causal_phrase'] for item in batch]
         causal_probs = torch.stack([item['causal_prob'] for item in batch])
@@ -274,6 +196,18 @@ class CausalPhraseWithOriginalIMDBDataModule(IMDBDataModule):
             'causal_attention_mask': torch.tensor(causal_encodings['attention_mask']),
             'causal_probs': causal_probs,
             'eta_probs': eta_probs,
+            'labels': labels
+        }
+    
+    def test_collate_fn(self, batch):
+        texts = [item['text'] for item in batch]
+        labels = torch.tensor([item['label'] for item in batch])
+
+        encodings = self.eta_tokenizer(texts, truncation=True, padding=True)
+
+        return {
+            'input_ids': torch.tensor(encodings['input_ids']),
+            'attention_mask': torch.tensor(encodings['attention_mask']),
             'labels': labels
         }
 

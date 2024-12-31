@@ -1,14 +1,14 @@
 import torch
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
-from data_loaders.imdb_sentiment.naive import IMDBDataModule
 from utilities.phrase_extraction import extract_phrases, remove_punctuation_phrases
 
-
 class CausalPhraseDataset(Dataset):
-    def __init__(self, dataset, causal_neutral_model, tokenizer):
+    def __init__(self, dataset, causal_neutral_model, tokenizer, text_column='text', label_column='label'):
         self.dataset = dataset
         self.causal_neutral_model = causal_neutral_model
         self.tokenizer = tokenizer
+        self.text_column = text_column
+        self.label_column = label_column
         self.debug_mode = False
 
     def __len__(self):
@@ -17,11 +17,11 @@ class CausalPhraseDataset(Dataset):
     def __getitem__(self, idx, debug=False):
         debug = self.debug_mode
         item = self.dataset[idx]
-        review, label = item['text'], item['label']
+        text, label = item[self.text_column], item[self.label_column]
         if debug:
-            print(f"Processing review {idx}: {review[:50]}...")  # Print first 50 chars of the review
+            print(f"Processing text {idx}: {text[:50]}...")  # Print first 50 chars of the text
 
-        phrases = remove_punctuation_phrases(extract_phrases(review))
+        phrases = remove_punctuation_phrases(extract_phrases(text))
 
         classifications = self.classify_phrases(phrases)
         causal_phrases = [phrase for phrase, cls in zip(phrases, classifications) if cls == 1]
@@ -31,11 +31,11 @@ class CausalPhraseDataset(Dataset):
         if not causal_phrases:
             if debug:
                 print("No causal phrases found. Using fallback strategy.")
-            sentences = review.split('.')
+            sentences = text.split('.')
             if sentences:
                 causal_phrases = [sentences[0].strip()]
             else:
-                words = review.split()
+                words = text.split()
                 causal_phrases = [' '.join(words[:50])]
 
         result = ' '.join(causal_phrases)
@@ -61,10 +61,12 @@ class CausalPhraseDataset(Dataset):
     def set_debug_mode(self, mode):
         self.debug_mode = mode
 
-
-class CausalPhraseIMDBDataModule(IMDBDataModule):
-    def __init__(self, classification_word="Sentiment", val_split=0.1):
-        super().__init__(classification_word, val_split)
+class CausalPhraseDataModule:
+    def __init__(self, base_data_module, classification_word, text_column='text', label_column='label'):
+        self.base_data_module = base_data_module
+        self.classification_word = classification_word
+        self.text_column = text_column
+        self.label_column = label_column
         self.causal_neutral_model = None
         self.tokenizer = None
 
@@ -76,8 +78,8 @@ class CausalPhraseIMDBDataModule(IMDBDataModule):
         if self.causal_neutral_model is None:
             raise ValueError("Causal Neutral model not set. Call set_causal_neutral_model first.")
 
-        train_dataset = CausalPhraseDataset(self.train_dataset, self.causal_neutral_model, self.tokenizer)
-        val_dataset = CausalPhraseDataset(self.val_dataset, self.causal_neutral_model, self.tokenizer)
+        train_dataset = CausalPhraseDataset(self.base_data_module.train_dataset, self.causal_neutral_model, self.tokenizer, self.text_column, self.label_column)
+        val_dataset = CausalPhraseDataset(self.base_data_module.val_dataset, self.causal_neutral_model, self.tokenizer, self.text_column, self.label_column)
 
         print(f"Train dataset size: {len(train_dataset)}")
         print(f"Validation dataset size: {len(val_dataset)}")
@@ -100,7 +102,7 @@ class CausalPhraseIMDBDataModule(IMDBDataModule):
         if self.causal_neutral_model is None:
             raise ValueError("Causal Neutral model not set. Call set_causal_neutral_model first.")
 
-        test_dataset = CausalPhraseDataset(self.test_dataset, self.causal_neutral_model, self.tokenizer)
+        test_dataset = CausalPhraseDataset(self.base_data_module.test_dataset, self.causal_neutral_model, self.tokenizer, self.text_column, self.label_column)
 
         def collate_fn(batch):
             texts, labels = zip(*batch)
@@ -118,8 +120,8 @@ class CausalPhraseIMDBDataModule(IMDBDataModule):
             raise ValueError("Causal Neutral model not set. Call set_causal_neutral_model first.")
 
         full_dataset = ConcatDataset([
-            CausalPhraseDataset(self.train_dataset, self.causal_neutral_model, self.tokenizer),
-            CausalPhraseDataset(self.val_dataset, self.causal_neutral_model, self.tokenizer)
+            CausalPhraseDataset(self.base_data_module.train_dataset, self.causal_neutral_model, self.tokenizer, self.text_column, self.label_column),
+            CausalPhraseDataset(self.base_data_module.val_dataset, self.causal_neutral_model, self.tokenizer, self.text_column, self.label_column)
         ])
 
         def collate_fn(batch):
@@ -132,3 +134,21 @@ class CausalPhraseIMDBDataModule(IMDBDataModule):
             }
 
         return DataLoader(full_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn)
+
+    def get_class_names(self):
+        return self.base_data_module.get_class_names()
+
+# Example usage
+if __name__ == "__main__":
+    from data_loaders.dataset_specific.imdb_sentiment import IMDBDataModule
+    from data_loaders.dataset_specific.jigsaw_toxicity import JigsawToxicityDataModule
+
+    # For IMDB
+    imdb_base_module = IMDBDataModule()
+    imdb_causal_module = CausalPhraseDataModule(imdb_base_module, "Sentiment", text_column='text', label_column='label')
+
+    # For Jigsaw
+    jigsaw_base_module = JigsawToxicityDataModule()
+    jigsaw_causal_module = CausalPhraseDataModule(jigsaw_base_module, "toxic", text_column='comment_text', label_column='toxic')
+
+    

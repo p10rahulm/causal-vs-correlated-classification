@@ -14,7 +14,7 @@ while not (project_root / '.git').exists() and project_root != project_root.pare
 sys.path.insert(0, str(project_root))
 
 from models.causal_neutral_model_variations import model_variations
-from data_loaders.wz_data_loaders.sentiment_imdb import CausalNeutralDataModule
+from data_loaders.imdb_sentiment.phrase_classification_dataloader import CausalNeutralDataModule
 from trainers.trainer import Trainer, save_trained_model
 from optimizers.optimizer_params import optimizer_configs
 

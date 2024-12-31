@@ -15,6 +15,11 @@ _claude_key.txt
 
 myenv
 
+data/imdb_sentiment/train_with_causal_neutral_splits_bert.json
+data/imdb_sentiment/train_with_causal_neutral_splits_distilbert.json
+data/imdb_sentiment/test_with_causal_neutral_splits_bert.json
+data/imdb_sentiment/test_with_causal_neutral_splits_distilbert.json
+
 # User-specific stuff
 .idea/**/workspace.xml
 .idea/**/tasks.xml

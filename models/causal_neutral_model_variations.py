@@ -79,12 +79,12 @@ def create_model_variations() -> Dict[str, Dict[str, Callable]]:
     for model_name, model_path in base_models.items():
         variations[model_name] = {}
         for config_name, hidden_layers in hidden_configs.items():
-            def create_model_fn(cw, model_path=model_path, hidden_layers=hidden_layers):
+            def create_model_fn(cw, model_path=model_path, hidden_layers=hidden_layers,freeze_encoder=True):
                 return create_custom_model(
                     model_name=model_path,
                     classification_word=cw,
                     hidden_layers=hidden_layers,
-                    freeze_encoder=True
+                    freeze_encoder=freeze_encoder
                 )
             variations[model_name][config_name] = create_model_fn
     return variations

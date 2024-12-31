@@ -46,7 +46,7 @@ def run_regularized_imdb_experiment():
     
     epochs = [5, 10]
     classification_word = "Sentiment"
-    batch_size = 256
+    batch_size = 16
     num_epochs = 10  # for regularization training
     lambda_values = [0.0,0.01,0.025,0.05,0.1,0.25,0.5,1]
 

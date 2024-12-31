@@ -1,6 +1,6 @@
 import torch
 from torch.utils.data import Dataset, DataLoader, ConcatDataset
-from data_loaders.classification_data_loaders.sentiment_imdb import IMDBDataModule
+from data_loaders.imdb_sentiment.naive import IMDBDataModule
 from utilities.phrase_extraction import extract_phrases, remove_punctuation_phrases
 
 
