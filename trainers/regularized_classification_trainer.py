@@ -1,3 +1,6 @@
+import os
+import datetime
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -6,8 +9,11 @@ from tqdm import tqdm
 import numpy as np
 from typing import Dict, List, Tuple, Any, Optional
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
+from trainers.trainer import Trainer
 
-class RegularizedTrainer:
+from utilities.general_utilities import get_project_root
+
+class RegularizedTrainer(Trainer):
     """
     A trainer that implements the ExpSE penalty for binary classification:
         R_{B} = sum_{x_i in {0,1}} [
@@ -42,6 +48,7 @@ class RegularizedTrainer:
         lambda_reg: float = 0.1,
         drop_lr_on_plateau: bool = True,
         classification_word = "Sentiment",
+        model_name = "bert",
         **kwargs
     ):
         """
@@ -74,6 +81,7 @@ class RegularizedTrainer:
         self.device = device if device is not None else torch.device("cpu")
         self.lambda_reg = lambda_reg
         self.classification_word = classification_word
+        self.model_name = model_name
 
         # Move models to device
         self.model_ref.to(self.device)
@@ -366,3 +374,30 @@ class RegularizedTrainer:
         """
         loader = self.data_module.get_val_dataloader()  # or get_test_dataloader()
         return self.validate(loader)
+
+    def save_model(self, path: str) -> None:
+        torch.save(self.model.state_dict(), path)
+        self.logger.info(f"Model saved to {path}")
+
+    def load_model(self, path: str) -> None:
+        self.model.load_state_dict(torch.load(path))
+        self.logger.info(f"Model loaded from {path}")
+
+    def save_trained_model_with_path(self, dataset_name, num_hidden_layers, filename=None):
+        # Get the project root directory
+        project_root = get_project_root()
+
+        # Create the directory structure
+        save_dir = os.path.join(project_root, "trained_models", dataset_name, self.classification_word.lower())
+        os.makedirs(save_dir, exist_ok=True)
+
+        # Create the filename with current date and time
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        if filename is None:
+            filename = f"{self.model_name}_{num_hidden_layers}hidden_{current_time}.pth"
+
+        # Full path
+        full_path = os.path.join(save_dir, filename)
+
+        # Use the trainer's save_model method
+        self.save_model(full_path)

@@ -156,7 +156,8 @@ def run_causal_mediation_experiment():
                     device=device,
                     # your custom param:
                     lambda_reg=lambda_reg,
-                    classification_word = "Sentiment"
+                    classification_word = "Sentiment",
+                    model_name = model_name
                 )
 
                 # 5b) Train for the specified number of epochs

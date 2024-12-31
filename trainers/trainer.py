@@ -281,12 +281,14 @@ def save_trained_model(trainer, dataset_name, num_hidden_layers):
     project_root = get_project_root()
 
     # Create the directory structure
-    save_dir = os.path.join(project_root, "trained_models", dataset_name, trainer.classification_word.lower())
+    classification_word = trainer.classification_word.lower() if trainer.classification_word else "sentiment"
+    save_dir = os.path.join(project_root, "trained_models", dataset_name, classification_word)
     os.makedirs(save_dir, exist_ok=True)
 
+    model_name = trainer.model_name.lower() if trainer.model_name else "bert"
     # Create the filename with current date and time
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    filename = f"{trainer.model_name}_{num_hidden_layers}hidden_{current_time}.pth"
+    filename = f"{model_name}_{num_hidden_layers}hidden_{current_time}.pth"
 
     # Full path
     full_path = os.path.join(save_dir, filename)
