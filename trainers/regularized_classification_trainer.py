@@ -74,6 +74,7 @@ class RegularizedTrainer(Trainer):
         """
         self.model_ref = model_ref
         self.model_theta = model_theta
+        self.model = self.model_theta
         self.data_module = data_module
         self.dataset_name = dataset_name
         self.batch_size = batch_size
@@ -244,8 +245,6 @@ class RegularizedTrainer(Trainer):
         if num_epochs is not None:
             self.num_epochs = num_epochs
 
-        train_loader = self.data_module.get_full_train_dataloader()
-
         history = []
         for epoch in range(self.num_epochs):
             train_loader = self.data_module.get_full_train_dataloader()
@@ -376,12 +375,13 @@ class RegularizedTrainer(Trainer):
         return self.validate(loader)
 
     def save_model(self, path: str) -> None:
+        self.model = self.model_theta
         torch.save(self.model.state_dict(), path)
-        self.logger.info(f"Model saved to {path}")
+        print(f"Model saved to {path}")
 
     def load_model(self, path: str) -> None:
         self.model.load_state_dict(torch.load(path))
-        self.logger.info(f"Model loaded from {path}")
+        print(f"Model loaded from {path}")
 
     def save_trained_model_with_path(self, dataset_name, num_hidden_layers, filename=None):
         # Get the project root directory

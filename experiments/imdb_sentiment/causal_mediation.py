@@ -92,11 +92,11 @@ def run_causal_mediation_experiment():
             "lambda_reg",
             "epoch",
             "train_loss",
-            "val_loss", 
-            "val_accuracy",
-            "val_precision",
-            "val_recall",
-            "val_f1"
+            "test_loss", 
+            "test_accuracy",
+            "test_precision",
+            "test_recall",
+            "test_f1"
         ]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -174,15 +174,33 @@ def run_causal_mediation_experiment():
                         "lambda_reg": lambda_reg,
                         "epoch": record.get("epoch", -1),
                         "train_loss": record.get("train_loss", None),
-                        "val_loss": record.get("val_loss", None),
-                        "val_accuracy": record.get("accuracy", None),
-                        "val_precision": record.get("precision", None),
-                        "val_recall": record.get("recall", None),
-                        "val_f1": record.get("f1", None),
+                        "test_loss": record.get("val_loss", None),
+                        "test_accuracy": record.get("accuracy", None),
+                        "test_precision": record.get("precision", None),
+                        "test_recall": record.get("recall", None),
+                        "test_f1": record.get("f1", None),
                     })
                 csvfile.flush()
 
-                # 5d) Optionally, save the final policy model after these 5 epochs
+                # 5d) Now do final test
+                test_loss, test_acc, test_prec, test_rec, test_f1 = trainer.test()
+                print(f"Test: {model_name}, λ={lambda_reg}, "
+                f"loss={test_loss:.4f}, acc={test_acc:.4f}")
+
+                writer.writerow({
+                    "model": model_name,
+                    "lambda_reg": lambda_reg,
+                    "epoch": "final_test",
+                    "train_loss": None,
+                    "test_loss": test_loss,
+                    "test_accuracy": test_acc,
+                    "test_precision": test_prec,
+                    "test_recall": test_rec,
+                    "test_f1": test_f1
+                })
+                csvfile.flush()
+
+                # 5e) Optionally, save the final policy model after these 5 epochs
                 save_trained_model(
                     trainer,
                     dataset_name=f"imdb_causal_mediation_{model_name}_lambda{lambda_reg}",
