@@ -1,0 +1,7 @@
+model,lambda_reg,epoch,train_loss,test_loss,test_accuracy,test_precision,test_recall,test_f1
+deberta,0.75,1,0.5927187206289172,,,,,
+deberta,0.75,2,11.214287246656419,,,,,
+deberta,0.75,3,13.675636406005024,,,,,
+deberta,0.75,4,2.1334935532057284,,,,,
+deberta,0.75,5,0.879008001627624,,,,,
+deberta,0.75,final_test,,0.3674583942502737,0.85916,0.8321373085743878,0.89984,0.8646654110773724

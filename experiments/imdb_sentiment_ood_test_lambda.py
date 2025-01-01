@@ -2,6 +2,9 @@ import os
 from pathlib import Path
 import sys
 
+# Set CUDA DEVICE
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
 while not (project_root / '.git').exists() and project_root != project_root.parent:
@@ -40,10 +43,12 @@ def run_ood_sentiment_test():
     logging.info(f"Using device: {device}")
 
     # Experiment parameters
-    models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator"]
+    models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", "modern_bert"]
     
-    original_epochs = [5, 10]
-    lambda_values = [0., 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1]
+    # original_epochs = [5, 10]
+    original_epochs = [5]
+    # lambda_values = [0., 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1]
+    lambda_values = [0.01, 0.05, 0.1, 0.25, 0.5]
     classification_word = "Sentiment"
     batch_size = 256
     hidden_layer = "1_hidden"
@@ -51,15 +56,15 @@ def run_ood_sentiment_test():
     # Dataset configurations
     datasets = [
         {
-            'name': 'OOD Sentiment',
-            'file': 'data/ood_sentiments_test.csv',
-            'text_column': 'CF_Rev_Sentiment',
-            'sentiment_column': 'CF_Sentiment'
-        },
-        {
             'name': 'OOD Genres',
             'file': 'data/ood_genres.csv',
             'text_column': 'CF_Rev_Genres',
+            'sentiment_column': 'CF_Sentiment'
+        },
+        {
+            'name': 'OOD Sentiment',
+            'file': 'data/ood_sentiments_test.csv',
+            'text_column': 'CF_Rev_Sentiment',
             'sentiment_column': 'CF_Sentiment'
         },
         {
@@ -89,13 +94,13 @@ def run_ood_sentiment_test():
                             logging.info(f"Testing model: {model_name}, original_epochs={epochs}, lambda={lambda_value}, dataset={dataset_config['name']}")
 
                             # Construct the model path
-                            model_path = find_model_file(f"trained_models/imdb_regularized_{model_name}_{epochs}_10epochs_lambda{lambda_value}/sentiment")
+                            model_path = find_model_file(f"trained_models/imdb_causal_mediation_{model_name}_lambda{lambda_value}/sentiment")
 
                             if model_path is None:
                                 logging.warning(f"Model file not found for {model_name} with epochs={epochs} and lambda={lambda_value}. Skipping...")
                                 continue
 
-                            model = load_trained_model(model_path, model_variations[model_name][hidden_layer](classification_word, freeze_encoder=False)).to(device)
+                            model = load_trained_model(model_path, model_variations[model_name][hidden_layer](classification_word, freeze_encoder=True)).to(device)
                             tokenizer = AutoTokenizer.from_pretrained(model.model_name)
 
                             # Create dataset and dataloader

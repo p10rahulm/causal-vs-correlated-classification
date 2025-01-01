@@ -2,6 +2,11 @@ import os
 from pathlib import Path
 import sys
 
+
+# Set CUDA DEVICE
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+
+
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
 while not (project_root / '.git').exists() and project_root != project_root.parent:
@@ -40,9 +45,9 @@ def run_ood_sentiment_test():
     logging.info(f"Using device: {device}")
 
     # Experiment parameters
-    models = ["roberta", "albert", "distilbert", "bert", "electra_small_discriminator", "t5"]
+    models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", "modern_bert"]
     original_epochs = [5, 10]
-    run_types = ['sentiment_naive_baseline', 'regularized', 'causal_phrases']
+    run_types = ['sentiment_naive_baseline', 'causal_phrases', 'regularized']
     classification_word = "Sentiment"
     batch_size = 32
     hidden_layer = "1_hidden"
@@ -91,9 +96,9 @@ def run_ood_sentiment_test():
                         if run_type == 'sentiment_naive_baseline':
                             model_path = find_model_file(f"trained_models/imdb_sentiment_naive_baseline_{model_name}_{epochs}epochs/sentiment")
                         elif run_type == 'regularized':
-                            model_path = find_model_file(f"trained_models/imdb_regularized_{model_name}_{epochs}_5epochs/sentiment")
+                            model_path = find_model_file(f"trained_models/imdb_causal_mediation_{model_name}_lambda0.5/sentiment")
                         elif run_type == 'causal_phrases':
-                            model_path = find_model_file(f"trained_models/imdb_causal_phrases_{model_name}_{epochs}epochs/sentiment")
+                            model_path = find_model_file(f"trained_models/imdb_causal_only_{model_name}_{epochs}epochs/sentiment")
                         else:
                             raise ValueError(f"Unknown run_type: {run_type}")
 

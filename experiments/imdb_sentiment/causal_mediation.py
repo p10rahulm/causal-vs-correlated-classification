@@ -82,6 +82,7 @@ def run_causal_mediation_experiment():
     batch_size = 16
     # Lambda runs
     lambda_values = [0.01, 0.05, 0.1, 0.25, 0.5]
+    lambda_values = [0.75, 1, 2, 5, 10]
     # We'll do 5 epochs of regularized training
     regularized_epochs = 5
 
