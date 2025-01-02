@@ -10,6 +10,8 @@ import numpy as np
 from typing import Dict, List, Tuple, Any, Optional
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from trainers.trainer import Trainer
+from transformers import get_cosine_schedule_with_warmup
+from torch.nn.utils import clip_grad_norm_
 
 from utilities.general_utilities import get_project_root
 
@@ -46,7 +48,11 @@ class RegularizedTrainer(Trainer):
         num_epochs: int = 5,
         device: Any = None,
         lambda_reg: float = 0.1,
-        drop_lr_on_plateau: bool = True,
+        drop_lr_on_plateau: bool = False,  # Default changed to False since we prefer cosine
+        cosine_decay: bool = True,
+        warmup_ratio: float = 0.1,  # Increased default warmup
+        layer_wise_lr_decay: float = 0.95,  # Layer-wise learning rate decay factor
+        max_grad_norm: float = 5.0,
         classification_word = "Sentiment",
         model_name = "bert",
         **kwargs
@@ -83,7 +89,8 @@ class RegularizedTrainer(Trainer):
         self.lambda_reg = lambda_reg
         self.classification_word = classification_word
         self.model_name = model_name
-
+        self.layer_wise_lr_decay = layer_wise_lr_decay
+        self.max_grad_norm = max_grad_norm
         # Move models to device
         self.model_ref.to(self.device)
         self.model_theta.to(self.device)
@@ -92,9 +99,14 @@ class RegularizedTrainer(Trainer):
         for p in self.model_ref.parameters():
             p.requires_grad = False
 
-        # Build optimizer
+        # Set up optimizer params with defaults
         if optimizer_params is None:
-            optimizer_params = {}
+            optimizer_params = {
+                "lr": 2e-5,
+                "betas": (0.9, 0.999),
+                "eps": 1e-8,
+                "weight_decay": 0.01
+            }
         self.optimizer_params = optimizer_params
 
         # If you have a global optimizer config somewhere, retrieve that class
@@ -107,7 +119,9 @@ class RegularizedTrainer(Trainer):
         else:
             raise ValueError(f"Unknown optimizer name: {optimizer_name}")
 
-        self.optimizer = self.optimizer_class(self.model_theta.parameters(), **self.optimizer_params)
+        # self.optimizer = self.optimizer_class(self.model_theta.parameters(), **self.optimizer_params)
+        # Create optimizer with layer-wise decay
+        self.optimizer = self._create_layer_wise_optimizer()
 
         # Optional LR scheduler
         if drop_lr_on_plateau:
@@ -115,9 +129,100 @@ class RegularizedTrainer(Trainer):
         else:
             self.scheduler = None
 
+        # Build your data loader once to figure out how many steps (or do it later)
+        train_loader = data_module.get_full_train_dataloader()
+        steps_per_epoch = len(train_loader)
+        total_training_steps = steps_per_epoch * self.num_epochs
+        # Ensure minimum warmup steps
+        warmup_steps = max(
+            min(int(warmup_ratio * total_training_steps), total_training_steps // 10),
+            100  # Minimum warmup steps
+        )
+
+        # Set up scheduler
+        if cosine_decay:
+            self.scheduler = get_cosine_schedule_with_warmup(
+                optimizer=self.optimizer,
+                num_warmup_steps=warmup_steps,
+                num_training_steps=total_training_steps
+            )
+        elif drop_lr_on_plateau:
+            self.scheduler = ReduceLROnPlateau(
+                self.optimizer, 
+                mode='min',
+                factor=0.1,
+                patience=3,
+                verbose=True
+            )
+        else:
+            self.scheduler = None
+        
         # Loss function for classification
         self.cls_loss_fn = nn.CrossEntropyLoss()
 
+
+    ###########################################################################
+    # Setup the optimizer
+    ###########################################################################
+    def _create_layer_wise_optimizer(self):
+        """Creates optimizer with layer-wise learning rate decay and proper weight decay settings."""
+        no_decay = ["bias", "LayerNorm.weight"]
+        
+        # Get the number of transformer layers
+        num_layers = len([name for name, _ in self.model_theta.named_parameters() 
+                         if "encoder.layer" in name and ".0." in name])
+        
+        optimizer_grouped_parameters = []
+        
+        # Handle encoder layers with decay
+        for layer_idx in range(num_layers, -1, -1):
+            layer_decay_rate = self.layer_wise_lr_decay ** (num_layers - layer_idx)
+            
+            # Parameters with weight decay
+            layer_params_decay = {
+                "params": [p for n, p in self.model_theta.named_parameters() 
+                          if f"encoder.layer.{layer_idx}." in n 
+                          and not any(nd in n for nd in no_decay)],
+                "weight_decay": self.optimizer_params["weight_decay"],
+                "lr": self.optimizer_params["lr"] * layer_decay_rate,
+            }
+            
+            # Parameters without weight decay
+            layer_params_no_decay = {
+                "params": [p for n, p in self.model_theta.named_parameters() 
+                          if f"encoder.layer.{layer_idx}." in n 
+                          and any(nd in n for nd in no_decay)],
+                "weight_decay": 0.0,
+                "lr": self.optimizer_params["lr"] * layer_decay_rate,
+            }
+            
+            optimizer_grouped_parameters.extend([layer_params_decay, layer_params_no_decay])
+        
+        # Handle non-encoder parameters (e.g., classifier, pooler)
+        other_params_decay = {
+            "params": [p for n, p in self.model_theta.named_parameters() 
+                      if not any(f"encoder.layer.{i}." in n for i in range(num_layers + 1))
+                      and not any(nd in n for nd in no_decay)],
+            "weight_decay": self.optimizer_params["weight_decay"],
+            "lr": self.optimizer_params["lr"],
+        }
+        
+        other_params_no_decay = {
+            "params": [p for n, p in self.model_theta.named_parameters() 
+                      if not any(f"encoder.layer.{i}." in n for i in range(num_layers + 1))
+                      and any(nd in n for nd in no_decay)],
+            "weight_decay": 0.0,
+            "lr": self.optimizer_params["lr"],
+        }
+        
+        optimizer_grouped_parameters.extend([other_params_decay, other_params_no_decay])
+        
+        return self.optimizer_class(
+            optimizer_grouped_parameters,
+            betas=self.optimizer_params.get("betas", (0.9, 0.999)),
+            eps=self.optimizer_params.get("eps", 1e-8)
+        )
+    
     ###########################################################################
     # 1) Compute ExpSE Penalty
     ###########################################################################
@@ -265,7 +370,12 @@ class RegularizedTrainer(Trainer):
         total_loss = 0.0
         total_steps = 0
 
-        progress_bar = tqdm(loader, desc=f"Epoch {epoch_idx+1}/{self.num_epochs}")
+        progress_bar = tqdm(
+            loader, 
+            desc=f"Epoch {epoch_idx+1}/{self.num_epochs}",
+            miniters=100,  # Update every 100 iterations
+            mininterval=10.0  # Update every 5 seconds
+        )
         for batch in progress_bar:
             # 1) Zero out gradients
             self.optimizer.zero_grad()
@@ -301,6 +411,7 @@ class RegularizedTrainer(Trainer):
             # (b) On z-only text
             z_ids = batch["z_input_ids"].to(self.device)
             z_mask = batch["z_attention_mask"].to(self.device)
+            
             with torch.no_grad():
                 ref_out_z = self.model_ref(z_ids, z_mask)
                 if hasattr(ref_out_z, "logits"):
@@ -321,12 +432,21 @@ class RegularizedTrainer(Trainer):
             loss = cls_loss + self.lambda_reg * expse_penalty
 
             loss.backward()
+            clip_grad_norm_(self.model_theta.parameters(), max_norm=self.max_grad_norm)
             self.optimizer.step()
+
+            # Step scheduler if using cosine decay
+            if self.scheduler is not None and not isinstance(self.scheduler, ReduceLROnPlateau):
+                self.scheduler.step()
 
             total_loss += loss.item()
             total_steps += 1
 
-            progress_bar.set_postfix({"loss": f"{loss.item():.4f}"})
+            # Update progress bar with loss and learning rate
+            progress_bar.set_postfix({
+                "loss": f"{loss.item():.4f}",
+                "lr": f"{self.optimizer.param_groups[0]['lr']:.2e}"
+            })
 
         avg_loss = total_loss / max(total_steps, 1)
         return {"epoch": epoch_idx + 1, "train_loss": avg_loss}

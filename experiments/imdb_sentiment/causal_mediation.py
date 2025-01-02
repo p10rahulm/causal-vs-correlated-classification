@@ -81,7 +81,7 @@ def run_causal_mediation_experiment():
     # or just list(baseline_checkpoints.keys())
     batch_size = 16
     # Lambda runs
-    lambda_values = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2]
+    lambda_values = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1]
     # We'll do 5 epochs of regularized training
     # regularized_epochs = 5
     regularized_epochs_list = [5, 10]
@@ -141,16 +141,15 @@ def run_causal_mediation_experiment():
                     # 5a) Build the trainer
                     #     This depends on your RegularizedTrainer signature.
                     #     We'll pass in the "ref_model", "policy_model", data_module, etc.
-
                     trainer = RegularizedTrainer(
                         model_ref=ref_model,
                         model_theta=policy_model,
                         data_module=data_module,
-                        # standard Trainer params:
                         optimizer_name="adamw",
                         dataset_name=f"imdb_causal_mediation_{model_name}",
+                        # standard Trainer params:
                         optimizer_params={
-                            "lr": 5e-5,  # or 1e-4, etc.
+                            "lr": 5e-5,
                             "betas": (0.9, 0.999),
                             "eps": 1e-8,
                             "weight_decay": 0.01
@@ -158,10 +157,15 @@ def run_causal_mediation_experiment():
                         batch_size=batch_size,
                         num_epochs=regularized_epochs,
                         device=device,
-                        # your custom param:
                         lambda_reg=lambda_reg,
-                        classification_word = "Sentiment",
-                        model_name = model_name
+                        classification_word="Sentiment",
+                        model_name=model_name,
+                        # New optimization parameters:
+                        cosine_decay=True,  # Use cosine decay with warmup
+                        drop_lr_on_plateau=False,  # Since we're using cosine decay
+                        warmup_ratio=0.05,  #5% warmup
+                        layer_wise_lr_decay=0.95,  # Each layer's LR is 0.95x the layer above it,
+                        max_grad_norm = 5.0,
                     )
 
                     # 5b) Train for the specified number of epochs
