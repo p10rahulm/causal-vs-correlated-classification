@@ -189,7 +189,7 @@ class RegularizedTrainer(Trainer):
         # That is: R_B = [ uncond_0 - cond_0 ] + [ uncond_1 - cond_1 ]
         # The sign is + because the eqn has a minus between them.
         #  R_B = sum_{x in {0,1}} [uncond_x - cond_x]
-        penalty = (uncond_0 - cond_0) + (uncond_1 - cond_1)
+        penalty = torch.abs(uncond_0 - cond_0) + torch.abs(uncond_1 - cond_1)
 
         return penalty
 
