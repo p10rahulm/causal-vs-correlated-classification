@@ -81,16 +81,17 @@ def run_causal_mediation_experiment():
     # or just list(baseline_checkpoints.keys())
     batch_size = 16
     # Lambda runs
-    lambda_values = [0.01, 0.05, 0.1, 0.25, 0.5]
-    lambda_values = [0.75, 1, 2, 5, 10]
+    lambda_values = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1, 2]
     # We'll do 5 epochs of regularized training
-    regularized_epochs = 5
+    # regularized_epochs = 5
+    regularized_epochs_list = [5, 10]
 
     # 2) Prepare a CSV to log each run
     with open(results_csv, "w", newline="") as csvfile:
         fieldnames = [
             "model",
             "lambda_reg",
+            "regularized_epochs",
             "epoch",
             "train_loss",
             "test_loss", 
@@ -134,81 +135,88 @@ def run_causal_mediation_experiment():
             # 5) For each lambda
             for lambda_reg in lambda_values:
                 logging.info(f"--- Starting Regularized Training: {model_name}, lambda={lambda_reg} ---")
+                for regularized_epochs in regularized_epochs_list:
+                    logging.info(f"==== Starting runs with {regularized_epochs} epochs of regularized training ====")
 
-                # 5a) Build the trainer
-                #     This depends on your RegularizedTrainer signature.
-                #     We'll pass in the "ref_model", "policy_model", data_module, etc.
+                    # 5a) Build the trainer
+                    #     This depends on your RegularizedTrainer signature.
+                    #     We'll pass in the "ref_model", "policy_model", data_module, etc.
 
-                trainer = RegularizedTrainer(
-                    model_ref=ref_model,
-                    model_theta=policy_model,
-                    data_module=data_module,
-                    # standard Trainer params:
-                    optimizer_name="adamw",
-                    dataset_name=f"imdb_causal_mediation_{model_name}",
-                    optimizer_params={
-                        "lr": 5e-5,  # or 1e-4, etc.
-                        "betas": (0.9, 0.999),
-                        "eps": 1e-8,
-                        "weight_decay": 0.01
-                    },
-                    batch_size=batch_size,
-                    num_epochs=regularized_epochs,
-                    device=device,
-                    # your custom param:
-                    lambda_reg=lambda_reg,
-                    classification_word = "Sentiment",
-                    model_name = model_name
-                )
+                    trainer = RegularizedTrainer(
+                        model_ref=ref_model,
+                        model_theta=policy_model,
+                        data_module=data_module,
+                        # standard Trainer params:
+                        optimizer_name="adamw",
+                        dataset_name=f"imdb_causal_mediation_{model_name}",
+                        optimizer_params={
+                            "lr": 5e-5,  # or 1e-4, etc.
+                            "betas": (0.9, 0.999),
+                            "eps": 1e-8,
+                            "weight_decay": 0.01
+                        },
+                        batch_size=batch_size,
+                        num_epochs=regularized_epochs,
+                        device=device,
+                        # your custom param:
+                        lambda_reg=lambda_reg,
+                        classification_word = "Sentiment",
+                        model_name = model_name
+                    )
 
-                # 5b) Train for the specified number of epochs
-                #     If your trainer has a loop that returns the per-epoch train/val stats, great.
-                #     We'll store them in 'epoch_records'.
-                epoch_records = trainer.train_on_full_dataset(num_epochs=regularized_epochs)
+                    # 5b) Train for the specified number of epochs
+                    #     If your trainer has a loop that returns the per-epoch train/val stats, great.
+                    #     We'll store them in 'epoch_records'.
+                    epoch_records = trainer.train_on_full_dataset(num_epochs=regularized_epochs)
 
-                # 5c) Each entry in 'epoch_records' might have something like:
-                #    {"epoch":..., "train_loss":..., "val_loss":..., "val_acc":..., etc.}
-                #    So we can log them to CSV.
-                for record in epoch_records:
+                    # 5c) Each entry in 'epoch_records' might have something like:
+                    #    {"epoch":..., "train_loss":..., "val_loss":..., "val_acc":..., etc.}
+                    #    So we can log them to CSV.
+                    for record in epoch_records:
+                        writer.writerow({
+                            "model": model_name,
+                            "lambda_reg": lambda_reg,
+                            "regularized_epochs": regularized_epochs,
+                            "epoch": record.get("epoch", -1),
+                            "train_loss": record.get("train_loss", None),
+                            "test_loss": record.get("val_loss", None),
+                            "test_accuracy": record.get("accuracy", None),
+                            "test_precision": record.get("precision", None),
+                            "test_recall": record.get("recall", None),
+                            "test_f1": record.get("f1", None),
+                        })
+                    csvfile.flush()
+
+                    # 5d) Now do final test
+                    test_loss, test_acc, test_prec, test_rec, test_f1 = trainer.test()
+                    logging.info(
+                        f"Final test: {model_name}, λ={lambda_reg}, "
+                        f"epochs={regularized_epochs}, loss={test_loss:.4f}, acc={test_acc:.4f}"
+                    )
+                    
+
                     writer.writerow({
                         "model": model_name,
                         "lambda_reg": lambda_reg,
-                        "epoch": record.get("epoch", -1),
-                        "train_loss": record.get("train_loss", None),
-                        "test_loss": record.get("val_loss", None),
-                        "test_accuracy": record.get("accuracy", None),
-                        "test_precision": record.get("precision", None),
-                        "test_recall": record.get("recall", None),
-                        "test_f1": record.get("f1", None),
+                        "regularized_epochs": regularized_epochs,
+                        "epoch": "final_test",
+                        "train_loss": None,
+                        "test_loss": test_loss,
+                        "test_accuracy": test_acc,
+                        "test_precision": test_prec,
+                        "test_recall": test_rec,
+                        "test_f1": test_f1
                     })
-                csvfile.flush()
+                    csvfile.flush()
 
-                # 5d) Now do final test
-                test_loss, test_acc, test_prec, test_rec, test_f1 = trainer.test()
-                print(f"Test: {model_name}, λ={lambda_reg}, "
-                f"loss={test_loss:.4f}, acc={test_acc:.4f}")
+                    # 5e) Optionally, save the final policy model after these 5 epochs
+                    save_trained_model(
+                        trainer,
+                        dataset_name=f"imdb_causal_mediation_{model_name}_lambda{lambda_reg}_{regularized_epochs}epochs",
+                        num_hidden_layers=1
+                    )
 
-                writer.writerow({
-                    "model": model_name,
-                    "lambda_reg": lambda_reg,
-                    "epoch": "final_test",
-                    "train_loss": None,
-                    "test_loss": test_loss,
-                    "test_accuracy": test_acc,
-                    "test_precision": test_prec,
-                    "test_recall": test_rec,
-                    "test_f1": test_f1
-                })
-                csvfile.flush()
-
-                # 5e) Optionally, save the final policy model after these 5 epochs
-                save_trained_model(
-                    trainer,
-                    dataset_name=f"imdb_causal_mediation_{model_name}_lambda{lambda_reg}",
-                    num_hidden_layers=1
-                )
-
-                logging.info(f"--- Done: {model_name}, lambda={lambda_reg} ---")
+                    logging.info(f"--- Done: {model_name}, lambda={lambda_reg} ---")
 
     logging.info(f"All experiments done! Results in {results_csv}")
 
