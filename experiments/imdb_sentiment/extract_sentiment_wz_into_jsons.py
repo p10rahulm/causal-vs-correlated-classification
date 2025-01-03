@@ -7,7 +7,7 @@ import json
 from datetime import datetime
 
 # Set CUDA DEVICE
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # Add project root to system path
 project_root = Path(__file__).resolve().parent

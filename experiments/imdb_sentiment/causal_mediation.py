@@ -75,13 +75,17 @@ def run_causal_mediation_experiment():
     # Which subset of models to run?
     model_list = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", "modern_bert"]
     model_list = ["electra_small_discriminator", "modern_bert"]
+    # model_list = ["modern_bert"]
     # model_list = ["roberta", "distilbert"]
+    # model_list = ["distilbert", "roberta"]
     # model_list = ["bert", "albert"]
+    # model_list = ["albert", "bert"] 
     # model_list = ["deberta"]
     # or just list(baseline_checkpoints.keys())
     batch_size = 16
     # Lambda runs
     lambda_values = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1]
+    lambda_values = [1, 0.75, 0.5, 0.25, 0.1, 0.075, 0.05, 0.025, 0.01, 0.005]
     # We'll do 5 epochs of regularized training
     # regularized_epochs = 5
     regularized_epochs_list = [5, 10]

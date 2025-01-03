@@ -7,7 +7,7 @@ import sys
 import csv
 
 # Set CUDA DEVICE
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 
 from datetime import datetime
@@ -43,7 +43,7 @@ def run_causal_only_experiment():
     # Some experiment settings
     models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", "modern_bert"]
     # models = ["electra_small_discriminator", "modern_bert"]
-    # models = ["roberta", "distilbert"]
+    models = ["roberta", "distilbert"]
     # models = ["bert", "albert"]
     # models = ["deberta"]
     classification_word = "Sentiment"

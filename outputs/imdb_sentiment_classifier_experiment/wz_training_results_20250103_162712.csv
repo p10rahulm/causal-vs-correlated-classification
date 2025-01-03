@@ -1,0 +1,3 @@
+model,epochs,optimizer,hidden_layers,learning_rate,train_loss
+deberta,5,adamw,2_hidden,0.0005,0.3444927875380302
+deberta,10,adamw,2_hidden,0.0005,0.33066576116938057
