@@ -1,23 +1,51 @@
 
 from utilities.phrase_extraction import extract_phrases, remove_punctuation_phrases
+import os
+import glob
 
 import torch
 from models.causal_neutral_model_variations import model_variations
+from pathlib import Path
+import sys
+import json
+from datetime import datetime
 
 
+# Add project root to system path
+project_root = Path(__file__).resolve().parent
+while not (project_root / '.git').exists() and project_root != project_root.parent:
+    project_root = project_root.parent
+sys.path.insert(0, str(project_root))
 
 ################################################################################
 # Configuration: Checkpoint paths and model references
 ################################################################################
 
-DISTILBERT_CKPT_PATH = (
-    "trained_models/imdb_sentiment_wz_distilbert_10epochs/sentiment/"
-    "CausalNeutralClassifier_1hidden_2024-12-30_19-26-16.pth"
-)
-BERT_CKPT_PATH = (
-    "trained_models/imdb_sentiment_wz_bert_10epochs/sentiment/"
-    "CausalNeutralClassifier_2hidden_2024-12-30_19-34-20.pth"
-)
+
+def get_checkpoint_paths():
+    """Get the latest checkpoint paths for DistilBERT and BERT models."""
+    
+    distilbert_dir = "trained_models/imdb_sentiment_wz_distilbert_10epochs/sentiment"
+    bert_dir = "trained_models/imdb_sentiment_wz_bert_10epochs/sentiment"
+    
+    # Get latest DistilBERT checkpoint
+    distilbert_pattern = os.path.join(distilbert_dir, "causalneutralclassifier_1hidden_*.pth")
+    distilbert_files = glob.glob(distilbert_pattern)
+    DISTILBERT_CKPT_PATH = max(distilbert_files, key=os.path.getmtime) if distilbert_files else None
+    
+    # Get latest BERT checkpoint
+    bert_pattern = os.path.join(bert_dir, "causalneutralclassifier_2hidden_*.pth")
+    bert_files = glob.glob(bert_pattern)
+    BERT_CKPT_PATH = max(bert_files, key=os.path.getmtime) if bert_files else None
+    
+    return DISTILBERT_CKPT_PATH, BERT_CKPT_PATH
+
+
+try:
+    DISTILBERT_CKPT_PATH, BERT_CKPT_PATH = get_checkpoint_paths()
+except FileNotFoundError as e:
+    print(f"Error: {e}")
+    raise
 
 
 # Map "distilbert" and "bert" to (model-creation-fn, checkpoint-path, hidden-layers)
@@ -41,9 +69,11 @@ def load_causal_neutral_classifier(model_name: str, device: torch.device):
     """
     Loads a causal–neutral classifier for BERT or DistilBERT from a checkpoint.
     """
+    print(f"CAUSAL_NEUTRAL_MODELS={CAUSAL_NEUTRAL_MODELS}, {CAUSAL_NEUTRAL_MODELS['distilbert']}")
     info = CAUSAL_NEUTRAL_MODELS[model_name]
     model_create_fn = info["model_fn"]
     ckpt_path = info["ckpt_path"]
+    print(f"ckpt_path={ckpt_path}, model_name={model_name}")
 
     # Create the model (freeze encoder or not, but typically it was trained with freeze_encoder=True)
     # model = model_create_fn("Sentiment", freeze_encoder=True)

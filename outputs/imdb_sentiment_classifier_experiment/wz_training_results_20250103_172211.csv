@@ -1,0 +1,5 @@
+model,epochs,optimizer,hidden_layers,learning_rate,train_loss
+albert,5,adamw,2_hidden,0.0005,0.32126133837630205
+albert,10,adamw,2_hidden,0.0005,0.31045808520222506
+modern_bert,5,adamw,2_hidden,0.0005,0.2954743810830198
+modern_bert,10,adamw,2_hidden,0.0005,0.27954367727103463
