@@ -104,7 +104,6 @@ def run_causal_mediation_experiment():
     # Which subset of models to run?
     model_list = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", "modern_bert"]
     # model_list = ["electra_small_discriminator", "modern_bert"]
-    model_list = ["electra_small_discriminator"]
     # model_list = ["roberta", "distilbert"]
     # model_list = ["distilbert", "roberta"]
     # model_list = ["bert", "albert"]
