@@ -19,11 +19,18 @@ sys.path.insert(0, str(project_root))
 import pandas as pd
 
 # First, read the causal mediation results
+# causal_files = [
+#     'outputs/imdb_sentiment_causal_mediation/results_20250102_143819.csv',
+#     'outputs/imdb_sentiment_causal_mediation/results_20250102_143842.csv',
+#     'outputs/imdb_sentiment_causal_mediation/results_20250102_143922.csv',
+#     'outputs/imdb_sentiment_causal_mediation/results_20250102_143943.csv'
+# ]
 causal_files = [
-    'outputs/imdb_sentiment_causal_mediation/results_20250102_143819.csv',
-    'outputs/imdb_sentiment_causal_mediation/results_20250102_143842.csv',
-    'outputs/imdb_sentiment_causal_mediation/results_20250102_143922.csv',
-    'outputs/imdb_sentiment_causal_mediation/results_20250102_143943.csv'
+    'outputs/imdb_sentiment_causal_mediation/results_20250103_214027.csv',
+    'outputs/imdb_sentiment_causal_mediation/results_20250103_214131.csv',
+    'outputs/imdb_sentiment_causal_mediation/results_20250103_214216.csv',
+    'outputs/imdb_sentiment_causal_mediation/results_20250103_214541.csv',
+    'outputs/imdb_sentiment_causal_mediation/results_20250106_060204.csv'
 ]
 causal_files.sort()
 

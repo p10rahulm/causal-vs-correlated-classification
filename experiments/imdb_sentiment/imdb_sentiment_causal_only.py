@@ -43,17 +43,29 @@ def run_causal_only_experiment():
     # Some experiment settings
     models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", "modern_bert"]
     # models = ["electra_small_discriminator", "modern_bert"]
-    models = ["roberta", "distilbert"]
+    # models = ["roberta", "distilbert"]
     # models = ["bert", "albert"]
     # models = ["deberta"]
     classification_word = "Sentiment"
     epochs = [5, 10]
     batch_size = 16
 
-    # Hyperparameters
-    optimizer_name = "adamw"
-    hidden_layer = "1_hidden"
-    learning_rate = 1e-4
+    # Improved optimizer settings
+    optimizer_params = {
+        "lr": 2e-5,
+        "betas": (0.9, 0.999),
+        "eps": 1e-8,
+        "weight_decay": 0.01
+    }
+
+    # Additional training parameters
+    training_params = {
+        "layer_wise_lr_decay": 0.95,
+        "max_grad_norm": 5.0,
+        "warmup_ratio": 0.1,
+        "cosine_decay": True,
+        "drop_lr_on_plateau": False
+    }
 
     # Prepare results file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -77,21 +89,17 @@ def run_causal_only_experiment():
                 # model = model_variations[model_name][hidden_layer](classification_word, freeze_encoder=False).to(device)
                 model = model_variations[model_name][hidden_layer](classification_word).to(device)
 
-                # Setup optimizer config
-                optimizer_config = optimizer_configs[optimizer_name].copy()
-                optimizer_config["params"] = optimizer_config["params"].copy()
-                optimizer_config["params"]["lr"] = learning_rate
-
                 # Build trainer
                 trainer = Trainer(
                     model=model,
                     data_module=data_module,
-                    optimizer_name=optimizer_name,
-                    optimizer_params=optimizer_config["params"],
+                    optimizer_name="adamw",
+                    optimizer_params=optimizer_params,
                     batch_size=batch_size,
                     num_epochs=num_epochs,
                     device=device,
                     dataset_name="imdb_causal_only_precomputed",
+                    **training_params  # Include the additional training parameters
                 )
 
                 # Train on the full dataset (train+val)

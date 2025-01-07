@@ -369,12 +369,15 @@ class RegularizedTrainer(Trainer):
 
         total_loss = 0.0
         total_steps = 0
-
+        total_loss = 0.0
+        running_loss = 0.0
         progress_bar = tqdm(
             loader, 
             desc=f"Epoch {epoch_idx+1}/{self.num_epochs}",
-            miniters=100,  # Update every 100 iterations
-            mininterval=10.0  # Update every 5 seconds
+            mininterval=10.0,
+            miniters=max(len(loader)//1000, 1), 
+            smoothing=0,  # Disable smoothing
+            leave=False
         )
         for batch in progress_bar:
             # 1) Zero out gradients
@@ -441,12 +444,14 @@ class RegularizedTrainer(Trainer):
 
             total_loss += loss.item()
             total_steps += 1
-
-            # Update progress bar with loss and learning rate
-            progress_bar.set_postfix({
-                "loss": f"{loss.item():.4f}",
-                "lr": f"{self.optimizer.param_groups[0]['lr']:.2e}"
-            })
+            running_loss = (running_loss * (total_steps - 1) + loss.item()) / total_steps
+            
+            # Only update progress bar when tqdm updates (every ~5% of epoch)
+            if total_steps % max(len(loader)//20, 1) == 0:
+                progress_bar.set_postfix({
+                    "avg_loss": f"{running_loss:.4f}",
+                    "lr": f"{self.optimizer.param_groups[0]['lr']:.2e}"
+                }, refresh=False)
 
         avg_loss = total_loss / max(total_steps, 1)
         return {"epoch": epoch_idx + 1, "train_loss": avg_loss}

@@ -14,6 +14,7 @@ while not (project_root / '.git').exists() and project_root != project_root.pare
     project_root = project_root.parent
 sys.path.insert(0, str(project_root))
 
+import torch
 from models.causal_neutral_model_variations import model_variations
 from data_loaders.imdb_sentiment.phrase_classification_dataloader import CausalNeutralDataModule
 
@@ -24,26 +25,42 @@ def load_hyperparameters(file_path):
     with open(file_path, 'r') as f:
         return json.load(f)
 
+def get_model_specific_lr(model_name):
+    """Get the optimal learning rate for each model type."""
+    lr_mapping = {
+        'deberta': 5e-6,
+        'roberta': 8e-6,
+        'electra_small_discriminator': 1e-5,
+        'distilbert': 1.5e-5,
+        'bert': 1e-5,
+        'albert': 2e-5,
+        'modern_bert': 8e-6
+    }
+    return lr_mapping.get(model_name, 1e-5)  # Default to 1e-5 if model not found.
+
+
 def get_hyperparameters(model_name, hyperparams):
+    """Get hyperparameters with model-specific learning rates."""
     if model_name in hyperparams:
         return {
             'optimizer_name': hyperparams[model_name]['optimizer'],
             'hidden_layer': hyperparams[model_name]['hidden_layers'],
-            'learning_rate': hyperparams[model_name]['learning_rate']
+            'learning_rate': get_model_specific_lr(model_name)  # Use model-specific LR
         }
     else:
         return {
             'optimizer_name': 'adamw',
             'hidden_layer': '2_hidden',
-            'learning_rate': 0.0005
+            'learning_rate': get_model_specific_lr(model_name)  # Use model-specific LR even for fallback
         }
 
 def run_imdb_sentiment_experiment():
     # Experiment parameters
     models = ["deberta", "electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "modern_bert"]
     classification_word = "Sentiment"
-    epochs = [5, 10]
+    epochs = [5, 10, 15, 20]
     batch_size = 16
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load hyperparameters
     hyperparams = load_hyperparameters('models/optimal_wz_classifier_validation_hyperparams.json')
@@ -52,9 +69,29 @@ def run_imdb_sentiment_experiment():
     file_path = "outputs/imdb_train_sentiment_analysis.json"  # Update this path if necessary
     data_module = CausalNeutralDataModule(file_path, classification_word)
 
+        # Training parameters for the new trainer
+    training_params = {
+        'layer_wise_lr_decay': 0.95,
+        'max_grad_norm': 5.0,
+        'warmup_ratio': 0.1,
+        'cosine_decay': True,
+        'drop_lr_on_plateau': False,
+        'patience': 3
+    }
+    training_params = {
+        'layer_wise_lr_decay': 0.8,        # Steeper decay (was 0.95) since lower layers are more important for phrase-level features
+        'max_grad_norm': 1.0,              # Tighter gradient clipping (was 5.0) for more stable training
+        'warmup_ratio': 0.06,              # Shorter warmup (was 0.1) since we're fine-tuning for a specific task
+        'cosine_decay': True,
+        'drop_lr_on_plateau': False,
+        'patience': 2                       # Reduced patience (was 3) for faster adaptation
+    }
+
+
+
     # Prepare results file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = "outputs/imdb_sentiment_classifier_experiment"
+    results_dir = "outputs/imdb_phrase_classification"
     os.makedirs(results_dir, exist_ok=True)
     results_file = os.path.join(results_dir, f"wz_training_results_{timestamp}.csv")
 
@@ -74,18 +111,40 @@ def run_imdb_sentiment_experiment():
                 print(f"Running experiment: {model_name}, epochs={num_epochs}")
 
                 # Create model
-                # model = model_variations[model_name][hidden_layer](classification_word, freeze_encoder=True)
-                model = model_variations[model_name][hidden_layer](classification_word)
+                model = model_variations[model_name][hidden_layer](classification_word, freeze_encoder=True)
+                # model = model_variations[model_name][hidden_layer](classification_word)
+                # Setup optimizer parameters
+                # optimizer_params = {
+                #     "lr": learning_rate,
+                #     "betas": (0.9, 0.999),
+                #     "eps": 1e-8,
+                #     "weight_decay": 0.01
+                # }
+                optimizer_params = {
+                    "lr": learning_rate,
+                    "betas": (0.9, 0.98),              # Modified beta2 for better adaptation to phrase-level patterns
+                    "eps": 1e-6,                       # Slightly larger epsilon for stability
+                    "weight_decay": 0.1                # Increased weight decay (was 0.01) to prevent overfitting on phrases
+                }
 
                 # Update optimizer config
                 optimizer_config = optimizer_configs[optimizer_name].copy()
                 optimizer_config['params'] = optimizer_config['params'].copy()
                 optimizer_config['params']['lr'] = learning_rate
 
-                # Create trainer
-                trainer = Trainer(model, data_module, optimizer_name=optimizer_name,
-                                  optimizer_params=optimizer_config['params'],
-                                  batch_size=batch_size, num_epochs=num_epochs)
+                # Create Trainer with parameters
+                trainer = Trainer(
+                    model=model,
+                    data_module=data_module,
+                    optimizer_name=optimizer_name,
+                    optimizer_params=optimizer_params,
+                    batch_size=batch_size,
+                    num_epochs=num_epochs,
+                    device=device,
+                    dataset_name="imdb_sentiment",
+                    **training_params
+                )
+
 
                 # Train on full dataset
                 print(f"Training {model_name} for {num_epochs} epochs...")
