@@ -14,7 +14,7 @@ import numpy as np
 def get_api_key():
     try:
         try: 
-            with open("../../_claude_key.txt", "r") as file:
+            with open("_claude_key.txt", "r") as file:
                 return file.read().strip()
         except:
             with open("../_claude_key.txt", "r") as file:

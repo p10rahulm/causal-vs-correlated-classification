@@ -234,14 +234,13 @@ class Trainer:
         """Modified train_epoch with gradient clipping and better progress reporting"""
         self.model.train()
         total_loss = 0
-        progress_bar = tqdm(self.train_loader, desc="Training", mininterval=10, miniters=int(len(self.train_loader)/1000))
         progress_bar = tqdm(
-            self.train_loader, 
-            desc="Training", 
-            mininterval=10.0,  # Update every 30 seconds
-            miniters=int(len(self.train_loader)/1000))
-            smoothing=0,  # Disable smoothing
-            leave=False  # Keep final stats
+            self.train_loader,
+            desc="Training",
+            mininterval=10.0,
+            miniters=int(len(self.train_loader)/1000),
+            smoothing=0,
+            leave=False
         )
         running_loss = 0
         batch_count = 0

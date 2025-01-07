@@ -6,7 +6,7 @@ import csv
 from datetime import datetime
 
 # Set CUDA DEVICE
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
@@ -28,7 +28,7 @@ def load_hyperparameters(file_path):
 def get_model_specific_lr(model_name):
     """Get the optimal learning rate for each model type."""
     lr_mapping = {
-        'deberta': 5e-6,
+        'deberta': 8e-6,
         'roberta': 8e-6,
         'electra_small_discriminator': 1e-5,
         'distilbert': 1.5e-5,
@@ -58,15 +58,17 @@ def run_imdb_sentiment_experiment():
     # Experiment parameters
     models = ["deberta", "electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "modern_bert"]
     classification_word = "Sentiment"
-    epochs = [5, 10, 15, 20]
+    epochs = [10, 20, 30, 40]
     batch_size = 16
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load hyperparameters
     hyperparams = load_hyperparameters('models/optimal_wz_classifier_validation_hyperparams.json')
 
+
     # Prepare data loader
-    file_path = "outputs/imdb_train_sentiment_analysis.json"  # Update this path if necessary
+    # file_path = "outputs/imdb_train_sentiment_analysis.json"  # Update this path if necessary
+    file_path = "outputs/imdb_phrase_dataset/imdb_sentiment_phrases_20250107_121028.json"
     data_module = CausalNeutralDataModule(file_path, classification_word)
 
         # Training parameters for the new trainer
