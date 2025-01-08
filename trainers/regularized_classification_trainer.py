@@ -20,7 +20,7 @@ class RegularizedTrainer(Trainer):
     A trainer that implements the ExpSE penalty for binary classification:
         R_{B} = sum_{x_i in {0,1}} [
                     (1/|B|)  sum_{s in B} [ P_theta(y=x_i|s) * ( P_ref(y=x_i|s) / P_ref(y=x_i|s_{z-only}) ) ]
-                 -  (1/|B_{x_i}|) sum_{s in B_{x_i}} [ P_theta(y=x_i|s) ]
+                -  (1/|B_{x_i}|) sum_{s in B_{x_i}} [ P_theta(y=x_i|s) ]
                 ]
 
     We add:  total_loss = cross_entropy_loss + lambda_reg * R_B
