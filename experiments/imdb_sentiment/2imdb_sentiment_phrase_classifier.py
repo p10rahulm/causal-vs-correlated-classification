@@ -28,13 +28,13 @@ def load_hyperparameters(file_path):
 def get_model_specific_lr(model_name):
     """Get the optimal learning rate for each model type."""
     lr_mapping = {
-        'deberta': 8e-6,
-        'roberta': 8e-6,
-        'electra_small_discriminator': 1e-5,
-        'distilbert': 1.5e-5,
-        'bert': 1e-5,
-        'albert': 2e-5,
-        'modern_bert': 8e-6
+        'deberta': 8e-5,
+        'roberta': 8e-5,
+        'electra_small_discriminator': 1e-4,
+        'distilbert': 1.5e-4,
+        'bert': 1e-4,
+        'albert': 2e-4,
+        'modern_bert': 8e-5
     }
     return lr_mapping.get(model_name, 1e-5)  # Default to 1e-5 if model not found.
 
@@ -71,7 +71,7 @@ def run_imdb_sentiment_experiment():
     file_path = "outputs/imdb_phrase_dataset/imdb_sentiment_phrases_20250107_121028.json"
     data_module = CausalNeutralDataModule(file_path, classification_word)
 
-        # Training parameters for the new trainer
+    # Training parameters for the new trainer
     training_params = {
         'layer_wise_lr_decay': 0.95,
         'max_grad_norm': 5.0,

@@ -92,7 +92,7 @@ def load_causal_neutral_classifier(model_name: str, device: torch.device, checkp
     print(f"Loading checkpoint from: {ckpt_path}")
     
     # Create model instance
-    model = model_create_fn("Sentiment", freeze_encoder=False)
+    model = model_create_fn("Sentiment", freeze_encoder=True)
     model.load_state_dict(torch.load(ckpt_path, map_location=device))
     model.eval().to(device)
     model.device = device
