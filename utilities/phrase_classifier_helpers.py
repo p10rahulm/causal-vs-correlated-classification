@@ -65,26 +65,39 @@ CAUSAL_NEUTRAL_MODELS = {
 # Helper functions
 ################################################################################
 
-def load_causal_neutral_classifier(model_name: str, device: torch.device):
+def load_causal_neutral_classifier(model_name: str, device: torch.device, checkpoint_path: str = None):
     """
-    Loads a causal–neutral classifier for BERT or DistilBERT from a checkpoint.
+    Loads a causal–neutral classifier from a checkpoint.
+    
+    Args:
+        model_name: str, either "bert" or "distilbert"
+        device: torch.device
+        checkpoint_path: str, optional custom checkpoint path
     """
-    print(f"CAUSAL_NEUTRAL_MODELS={CAUSAL_NEUTRAL_MODELS}, {CAUSAL_NEUTRAL_MODELS['distilbert']}")
-    info = CAUSAL_NEUTRAL_MODELS[model_name]
-    model_create_fn = info["model_fn"]
-    ckpt_path = info["ckpt_path"]
-    print(f"ckpt_path={ckpt_path}, model_name={model_name}")
-
-    # Create the model (freeze encoder or not, but typically it was trained with freeze_encoder=True)
-    # model = model_create_fn("Sentiment", freeze_encoder=True)
-    model = model_create_fn("Sentiment")
+    if checkpoint_path:
+        # Use custom checkpoint
+        if model_name == "distilbert":
+            model_create_fn = model_variations["distilbert"]["1_hidden"]
+        else:  # bert
+            model_create_fn = model_variations["bert"]["2_hidden"]
+        ckpt_path = checkpoint_path
+    else:
+        # Use default checkpoint from CAUSAL_NEUTRAL_MODELS
+        info = CAUSAL_NEUTRAL_MODELS[model_name]
+        model_create_fn = info["model_fn"]
+        ckpt_path = info["ckpt_path"]
+        if ckpt_path is None:
+            raise ValueError(f"No default checkpoint found for {model_name}")
+    
+    print(f"Loading checkpoint from: {ckpt_path}")
+    
+    # Create model instance
+    model = model_create_fn("Sentiment", freeze_encoder=False)
     model.load_state_dict(torch.load(ckpt_path, map_location=device))
     model.eval().to(device)
-
-    # Some versions of your model add `.device = device`. If not, do it explicitly:
     model.device = device
-    return model
-
+    
+    return model, ckpt_path
 
 def classify_phrases(phrases, classifier_model, tokenizer):
     """
