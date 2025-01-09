@@ -93,7 +93,7 @@ class RegularizedTrainer(Trainer):
         :param device: e.g. torch.device("cuda") or "cpu".
         :param kwargs: Extra placeholders if needed.
         """
-        super().__init__()
+        # super().__init__()
         self.model_ref = model_ref
         self.model_theta = model_theta
         self.model = self.model_theta # for consistency
@@ -141,7 +141,7 @@ class RegularizedTrainer(Trainer):
         self.optimizer = self._create_layer_wise_optimizer()
 
         # Build your data loader once to figure out how many steps (or do it later)
-        train_loader = data_module.get_full_train_dataloader()
+        train_loader = data_module.get_train_dataloader()
         self.steps_per_epoch = len(train_loader)
         self.total_steps = self.steps_per_epoch * self.num_epochs
         
@@ -605,7 +605,15 @@ class RegularizedTrainer(Trainer):
         all_labels = []
 
         with torch.no_grad():
-            for batch in loader:
+            progress_bar = tqdm(
+                loader, 
+                desc=f"Validation",
+                mininterval=10.0,
+                miniters=max(len(loader)//1000, 1),
+                smoothing=0,  # Disable smoothing
+                leave=False
+            )
+            for batch in tqdm(progress_bar):
                 full_ids = batch["full_input_ids"].to(self.device)
                 full_mask = batch["full_attention_mask"].to(self.device)
                 labels = batch["labels"].to(self.device)

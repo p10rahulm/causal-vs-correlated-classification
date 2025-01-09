@@ -20,7 +20,7 @@ from datetime import datetime
 from pathlib import Path
 
 # Set CUDA DEVICE
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 import torch
 
@@ -47,7 +47,7 @@ def run_causal_mediation_gridsearch():
 
     # Results folder
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = Path("outputs/imdb_causal_mediation_sota_search")
+    results_dir = Path("outputs/imdb_causal_mediation")
     results_dir.mkdir(parents=True, exist_ok=True)
     results_csv = results_dir / f"results_{timestamp}.csv"
 
@@ -60,17 +60,18 @@ def run_causal_mediation_gridsearch():
 
     # Define the lists for looping
     lr_schedules = [
-       "cosine_warm_restarts",
+    #    "cosine_warm_restarts",
     #    "one_cycle",
     #    "cyclic_triangular",
-    #    "cyclic_triangular2"
+       "cyclic_triangular2"
     ]
     lambda_schedule_modes = ["piecewise", "exponential", "linear"]
     learning_rates = [5e-5, 1e-4, 2.5e-4]
 
     # You can either specify a single checkpoint or automatically find one. 
     # For example, let's assume you have a baseline path:
-    baseline_ckpt_path = "trained_models/imdb_sentiment_naive_baseline_albert_5epochs/sentiment/CausalNeutralClassifier_1hidden_2024-12-30_21-28-06.pth"
+    # baseline_ckpt_path = "trained_models/imdb_sentiment_naive_baseline_albert_5epochs/sentiment/CausalNeutralClassifier_1hidden_2024-12-30_21-28-06.pth"
+    baseline_ckpt_path = "trained_models/imdb_sentiment_naive_baseline_albert_10epochs/sentiment/causalneutralclassifier_2hidden_2025-01-09_16-59-30.pth"
     
     # We'll store results from all runs in one CSV
     with open(results_csv, "w", newline="") as csvfile:

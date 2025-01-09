@@ -1,0 +1,2 @@
+model,epochs,final_loss,test_loss,test_accuracy,test_precision,test_recall,test_f1
+albert,10,0.2694194325444337,0.25379317002615254,0.89524,0.895250687578592,0.89524,0.8952392918176126

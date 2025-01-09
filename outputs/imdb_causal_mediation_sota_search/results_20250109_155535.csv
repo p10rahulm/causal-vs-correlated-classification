@@ -1,1 +1,0 @@
-model_name,lr_schedule,lambda_schedule_mode,base_lr,epoch,train_loss,lambda_value,test_loss,accuracy,precision,recall,f1
