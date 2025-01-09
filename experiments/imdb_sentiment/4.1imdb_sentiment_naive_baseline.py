@@ -6,7 +6,7 @@ import csv
 from datetime import datetime
 
 # Set CUDA DEVICE (optional)
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
@@ -85,10 +85,10 @@ def run_imdb_sentiment_experiment():
     # Experiment parameters
     
     models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", ""]
-    models = ["electra_small_discriminator", "modern_bert"]
+    # models = ["electra_small_discriminator", "modern_bert"]
     # models = ["roberta","distilbert"]
     # models = ["albert", "bert"]
-    # models = ["deberta"]
+    models = ["deberta"]
     classification_word = "Sentiment"
     hidden_layer = "2_hidden"  # or "1_hidden"
     epochs = [10, 20, 40, 60, 80, 100]
@@ -145,7 +145,7 @@ def run_imdb_sentiment_experiment():
                 print(f"Running experiment: {model_name}, epochs={num_epochs}")
 
                 # Create model
-                model = model_variations[model_name][hidden_layer](classification_word).to(device)
+                model = model_variations[model_name][hidden_layer](classification_word, freeze_encoder=False)
 
                 # Create trainer
                 trainer = Trainer(

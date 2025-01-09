@@ -288,7 +288,14 @@ class Trainer:
         total_loss = 0
         all_preds = []
         all_labels = []
-        progress_bar = tqdm(self.val_loader, desc="Validating", mininterval=10)
+        progress_bar = tqdm(
+            self.val_loader, 
+            desc=f"Validating", 
+            mininterval=10.0, 
+            miniters=int(len(self.val_loader)/1000),
+            position=0,
+            leave=False
+        )
         with torch.no_grad():
             for batch in progress_bar:
                 input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
@@ -427,7 +434,15 @@ class Trainer:
         # Get the test dataloader
         test_loader = self.data_module.get_test_dataloader(self.model.tokenizer, self.batch_size)
 
-        progress_bar = tqdm(test_loader, desc="Testing", mininterval=10)
+
+        progress_bar = tqdm(
+                test_loader, 
+                desc=f"Testing", 
+                mininterval=10.0, 
+                miniters=int(len(test_loader)/1000),
+                position=0,
+                leave=False
+            )
         with torch.no_grad():
             for batch in progress_bar:
                 if isinstance(batch, dict):
