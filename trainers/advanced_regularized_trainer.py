@@ -1,17 +1,24 @@
 import os
 import datetime
-
+import logging
+    
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 import numpy as np
 from typing import Dict, List, Tuple, Any, Optional
+import math
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support
 from trainers.trainer import Trainer
 from transformers import get_cosine_schedule_with_warmup
 from torch.nn.utils import clip_grad_norm_
+from torch.optim.lr_scheduler import (
+    ReduceLROnPlateau,
+    CosineAnnealingWarmRestarts,
+    OneCycleLR,
+    CyclicLR
+)
 
 
 from utilities.general_utilities import get_project_root
@@ -35,6 +42,12 @@ class RegularizedTrainer(Trainer):
             lambda_reg=0.1
         )
         trainer.train_on_full_dataset(num_epochs=5)   # Or trainer.train()
+    
+    Advanced Trainer includes:
+      - Multiple LR schedule options (cosine warm restarts, one-cycle, cyclic)
+      - A flexible lambda schedule (piecewise or smooth)
+      - Optional test every N epochs
+      - 2 hidden layers in your classification head (controlled by how you instantiate the model).
     """
 
     def __init__(
@@ -46,16 +59,19 @@ class RegularizedTrainer(Trainer):
         dataset_name: str = "imdb_causal_mediation",
         optimizer_params: Dict[str, Any] = None,
         batch_size: int = 32,
-        num_epochs: int = 5,
-        device: Any = None,
-        lambda_reg: float = 0.1,
-        drop_lr_on_plateau: bool = False,  # Default changed to False since we prefer cosine
-        cosine_decay: bool = True,
-        warmup_ratio: float = 0.1,  # Increased default warmup
-        layer_wise_lr_decay: float = 0.95,  # Layer-wise learning rate decay factor
+        num_epochs: int = 100,
+        device: Any = None,       
+        lambda_schedule_mode: str = "piecewise",  # "piecewise", "linear", "exponential", ...
+        lambda_start: float = 1.0,
+        lambda_end: float = 0.005,
+        lr_schedule: str = "cosine_warm_restarts",
+        test_interval: int = 20,  # how often to run test() in epochs
+        warmup_ratio: float = 0.1,  # For OneCycle / partial warmups
+        cycle_length_epochs: int = 10,  # For CyclicLR
+        layer_wise_lr_decay: float = 0.95,
         max_grad_norm: float = 5.0,
-        classification_word = "Sentiment",
-        model_name = "bert",
+        classification_word="Sentiment",
+        model_name="albert",
         **kwargs
     ):
         """
@@ -75,42 +91,40 @@ class RegularizedTrainer(Trainer):
         :param batch_size: Not strictly necessary if your data_module already sets that.
         :param num_epochs: Number of training epochs.
         :param device: e.g. torch.device("cuda") or "cpu".
-        :param lambda_reg: Weight of the ExpSE penalty.
-        :param drop_lr_on_plateau: If True, use a scheduler that reduces LR on plateau.
         :param kwargs: Extra placeholders if needed.
         """
+        super().__init__()
         self.model_ref = model_ref
         self.model_theta = model_theta
-        self.model = self.model_theta
+        self.model = self.model_theta # for consistency
         self.data_module = data_module
         self.dataset_name = dataset_name
         self.batch_size = batch_size
         self.num_epochs = num_epochs
         self.device = device if device is not None else torch.device("cpu")
-        self.lambda_reg = lambda_reg
+        
         self.classification_word = classification_word
         self.model_name = model_name
-        self.layer_wise_lr_decay = layer_wise_lr_decay
-        self.max_grad_norm = max_grad_norm
+        self.test_interval = test_interval
+        
         # Move models to device
         self.model_ref.to(self.device)
         self.model_theta.to(self.device)
-
-        # Possibly freeze reference model parameters
+        # freeze reference model
+        self.model_ref.to(self.device)
         for p in self.model_ref.parameters():
             p.requires_grad = False
 
-        # Set up optimizer params with defaults
+        # Default optimizer_params
         if optimizer_params is None:
             optimizer_params = {
-                "lr": 2e-5,
+                "lr": 5e-5,
                 "betas": (0.9, 0.999),
                 "eps": 1e-8,
                 "weight_decay": 0.01
             }
         self.optimizer_params = optimizer_params
-
-        # If you have a global optimizer config somewhere, retrieve that class
+        # --- Set up the optimizer class ---
         if optimizer_name.lower() == "adamw":
             from torch.optim import AdamW
             self.optimizer_class = AdamW
@@ -118,45 +132,42 @@ class RegularizedTrainer(Trainer):
             from torch.optim import Adam
             self.optimizer_class = Adam
         else:
-            raise ValueError(f"Unknown optimizer name: {optimizer_name}")
+            raise ValueError(f"Unknown optimizer: {optimizer_name}")
 
-        # self.optimizer = self.optimizer_class(self.model_theta.parameters(), **self.optimizer_params)
-        # Create optimizer with layer-wise decay
+        
+        # Create optimizer with layer-wise LR decay
+        self.layer_wise_lr_decay = layer_wise_lr_decay
+        self.max_grad_norm = max_grad_norm
         self.optimizer = self._create_layer_wise_optimizer()
-
-        # Optional LR scheduler
-        if drop_lr_on_plateau:
-            self.scheduler = ReduceLROnPlateau(self.optimizer, mode='min', factor=0.1, patience=3)
-        else:
-            self.scheduler = None
 
         # Build your data loader once to figure out how many steps (or do it later)
         train_loader = data_module.get_full_train_dataloader()
-        steps_per_epoch = len(train_loader)
-        total_training_steps = steps_per_epoch * self.num_epochs
-        # Ensure minimum warmup steps
-        warmup_steps = max(
-            min(int(warmup_ratio * total_training_steps), total_training_steps // 10),
-            100  # Minimum warmup steps
-        )
+        self.steps_per_epoch = len(train_loader)
+        self.total_steps = self.steps_per_epoch * self.num_epochs
+        
+        # --- LR Scheduler ---
+        self.lr_schedule = lr_schedule
+        self.warmup_ratio = warmup_ratio
+        self.cycle_length_epochs = cycle_length_epochs
+        self._setup_scheduler()
 
-        # Set up scheduler
-        if cosine_decay:
-            self.scheduler = get_cosine_schedule_with_warmup(
-                optimizer=self.optimizer,
-                num_warmup_steps=warmup_steps,
-                num_training_steps=total_training_steps
-            )
-        elif drop_lr_on_plateau:
-            self.scheduler = ReduceLROnPlateau(
-                self.optimizer, 
-                mode='min',
-                factor=0.1,
-                patience=3,
-                verbose=True
-            )
-        else:
-            self.scheduler = None
+        # --- Lambda schedule setup ---
+        valid_lambda_modes = ["piecewise", "exponential", "linear"]
+        if lambda_schedule_mode not in valid_lambda_modes:
+            raise ValueError(f"lambda_schedule_mode must be one of {valid_lambda_modes}")
+        
+        self.lambda_schedule_mode = lambda_schedule_mode
+        self.lambda_start = lambda_start
+        self.lambda_end = lambda_end
+        self._lambda_piecewise_values = [
+            1.0, 0.75, 0.5, 0.25, 0.1,
+            0.075, 0.05, 0.025, 0.01, 0.005
+        ]  # Each for 10 epochs => total 100
+        # If you want exactly your chunked approach, each block is 10 epochs.
+
+        # We'll store the current lambda each step.
+        self.current_lambda = lambda_start
+
         
         # Loss function for classification
         self.cls_loss_fn = nn.CrossEntropyLoss()
@@ -165,68 +176,174 @@ class RegularizedTrainer(Trainer):
     ###########################################################################
     # Setup the optimizer
     ###########################################################################
+    
+    def _get_current_lambda(self, epoch_idx: int, global_step: int) -> float:
+        """
+        Returns the penalty weight (lambda) given the chosen schedule.
+        We'll consider the entire training as 100 epochs total, so
+        if self.num_epochs=100, each epoch is 1 chunk in piecewise, or
+        we do a smooth approach for "linear" / "exponential".
+        """
+        if self.lambda_schedule_mode == "piecewise":
+            # We assume 100 epochs total, each chunk of 10 => next piece.
+            chunk_size = max(self.num_epochs // 10, 1)
+            chunk_idx = epoch_idx // chunk_size
+            if chunk_idx >= len(self._lambda_piecewise_values):
+                chunk_idx = len(self._lambda_piecewise_values) - 1
+            return self._lambda_piecewise_values[chunk_idx]
+
+        elif self.lambda_schedule_mode == "linear":
+            # linear from self.lambda_start -> self.lambda_end across total_steps
+            progress = float(global_step) / float(self.total_steps)
+            lam = self.lambda_start + (self.lambda_end - self.lambda_start) * progress
+            return lam
+
+        elif self.lambda_schedule_mode == "exponential":
+            # exponential from start->end
+            # We solve for alpha so that: end = start * exp(-alpha * total_steps)
+            # alpha = -ln(end/start) / total_steps
+            if self.lambda_start <= 0 or self.lambda_end <= 0:
+                raise ValueError("For exponential decay, need positive start/end!")
+            alpha = -math.log(self.lambda_end / self.lambda_start) / float(self.total_steps)
+            lam = self.lambda_start * math.exp(-alpha * global_step)
+            return lam
+
+        else:
+            # fallback: just return a constant
+            return self.lambda_start
+    
+    def _setup_scheduler(self):
+        # We'll define a convenience routine that wraps the
+        # Cosine/OneCycle/Cyclic approaches.
+
+        if self.lr_schedule in ["cosine_warm_restarts", "one_cycle", 
+                                "cyclic_triangular", "cyclic_triangular2"]:
+
+            # For all approaches, define total_steps
+            total_steps = self.steps_per_epoch * self.num_epochs
+            base_lr = self.optimizer_params["lr"]
+
+            if self.lr_schedule == "cosine_warm_restarts":
+                # We'll do something like T_0 = (cycle_length_epochs * steps_per_epoch)
+                # Then each T_0 epochs, we do a warm restart.
+                # The warmup can be done by just letting the model start at a lower lr or
+                # a short manual warmup step. For a quick approach, we let the scheduler
+                # handle everything but you can do a manual warmup if you want.
+                
+                self.scheduler = CosineAnnealingWarmRestarts(
+                    self.optimizer,
+                    T_0=self.cycle_length_epochs * self.steps_per_epoch,
+                    T_mult=1,
+                    eta_min=5e-7  # end LR
+                )
+
+            elif self.lr_schedule == "one_cycle":
+                # OneCycleLR allows specifying max_lr, total_steps, etc.
+                # We'll do 10% warmup via pct_start=0.1
+                self.scheduler = OneCycleLR(
+                    self.optimizer,
+                    max_lr=base_lr,
+                    total_steps=total_steps,
+                    pct_start=self.warmup_ratio,  # e.g. 0.1 => 10% of cycle is warmup
+                    anneal_strategy='cos',
+                    final_div_factor=base_lr / (5e-7)  # or something so we end near 5e-7
+                )
+
+            elif self.lr_schedule in ["cyclic_triangular", "cyclic_triangular2"]:
+                if self.optimizer_params["lr"] < 1e-10:
+                    raise ValueError("base_lr must be >= 1e-10 for cyclic schedules")
+                # cycle_length_epochs = 10 means we want 10 epochs per cycle
+                steps_up = self.cycle_length_epochs * self.steps_per_epoch // 2
+                mode = "triangular2" if self.lr_schedule == "cyclic_triangular2" else "triangular"
+                
+                self.scheduler = CyclicLR(
+                    self.optimizer,
+                    base_lr=5e-7,
+                    max_lr=base_lr,
+                    step_size_up=steps_up,
+                    mode=mode,
+                    cycle_momentum=False
+                )
+
+        else:
+            # If none, you can also do a fallback or no scheduler
+            self.scheduler = None      
+    
+
     def _create_layer_wise_optimizer(self):
-        """Creates optimizer with layer-wise learning rate decay and proper weight decay settings."""
+        """ Creates an optimizer that applies layer-wise LR decay. """
         no_decay = ["bias", "LayerNorm.weight"]
         
-        # Get the number of transformer layers
-        num_layers = len([name for name, _ in self.model_theta.named_parameters() 
-                         if "encoder.layer" in name and ".0." in name])
-        
-        optimizer_grouped_parameters = []
-        
-        # Handle encoder layers with decay
-        for layer_idx in range(num_layers, -1, -1):
-            layer_decay_rate = self.layer_wise_lr_decay ** (num_layers - layer_idx)
-            
-            # Parameters with weight decay
-            layer_params_decay = {
-                "params": [p for n, p in self.model_theta.named_parameters() 
-                          if f"encoder.layer.{layer_idx}." in n 
-                          and not any(nd in n for nd in no_decay)],
+        # Attempt to detect how many "encoder.layer" blocks exist
+        # (works for BERT/RoBERTa/etc. but for ALBERT might differ).
+        # If needed, adapt to your own naming scheme.
+        # We'll do something generic: find the largest X in 'encoder.layer.X.'.
+        layer_indices = []
+        for n, _ in self.model_theta.named_parameters():
+            if "encoder.layer." in n:
+                # parse out the layer number
+                try:
+                    layer_num = int(n.split("encoder.layer.")[1].split(".")[0])
+                    layer_indices.append(layer_num)
+                except:
+                    pass
+        num_layers = max(layer_indices) + 1 if layer_indices else 0
+
+        grouped_params = []
+        base_lr = self.optimizer_params["lr"]
+
+        # from last layer to first layer
+        for layer_idx in range(num_layers - 1, -1, -1):
+            decay_rate = self.layer_wise_lr_decay ** (num_layers - 1 - layer_idx)
+            layer_decay = base_lr * decay_rate
+
+            # decay
+            grouped_params.append({
+                "params": [
+                    p for n, p in self.model_theta.named_parameters()
+                    if f"encoder.layer.{layer_idx}." in n and not any(nd in n for nd in no_decay)
+                ],
                 "weight_decay": self.optimizer_params["weight_decay"],
-                "lr": self.optimizer_params["lr"] * layer_decay_rate,
-            }
-            
-            # Parameters without weight decay
-            layer_params_no_decay = {
-                "params": [p for n, p in self.model_theta.named_parameters() 
-                          if f"encoder.layer.{layer_idx}." in n 
-                          and any(nd in n for nd in no_decay)],
+                "lr": layer_decay
+            })
+            # no decay
+            grouped_params.append({
+                "params": [
+                    p for n, p in self.model_theta.named_parameters()
+                    if f"encoder.layer.{layer_idx}." in n and any(nd in n for nd in no_decay)
+                ],
                 "weight_decay": 0.0,
-                "lr": self.optimizer_params["lr"] * layer_decay_rate,
-            }
-            
-            optimizer_grouped_parameters.extend([layer_params_decay, layer_params_no_decay])
-        
-        # Handle non-encoder parameters (e.g., classifier, pooler)
-        other_params_decay = {
-            "params": [p for n, p in self.model_theta.named_parameters() 
-                      if not any(f"encoder.layer.{i}." in n for i in range(num_layers + 1))
-                      and not any(nd in n for nd in no_decay)],
+                "lr": layer_decay
+            })
+
+        # Finally, handle embeddings & pooler & classification heads if not in "encoder.layer"
+        # with base lr or no decay
+        grouped_params.append({
+            "params": [
+                p for n, p in self.model_theta.named_parameters()
+                if "encoder.layer." not in n and not any(nd in n for nd in no_decay)
+            ],
             "weight_decay": self.optimizer_params["weight_decay"],
-            "lr": self.optimizer_params["lr"],
-        }
-        
-        other_params_no_decay = {
-            "params": [p for n, p in self.model_theta.named_parameters() 
-                      if not any(f"encoder.layer.{i}." in n for i in range(num_layers + 1))
-                      and any(nd in n for nd in no_decay)],
+            "lr": base_lr
+        })
+        grouped_params.append({
+            "params": [
+                p for n, p in self.model_theta.named_parameters()
+                if "encoder.layer." not in n and any(nd in n for nd in no_decay)
+            ],
             "weight_decay": 0.0,
-            "lr": self.optimizer_params["lr"],
-        }
-        
-        optimizer_grouped_parameters.extend([other_params_decay, other_params_no_decay])
-        
-        return self.optimizer_class(
-            optimizer_grouped_parameters,
-            betas=self.optimizer_params.get("betas", (0.9, 0.999)),
-            eps=self.optimizer_params.get("eps", 1e-8)
-        )
-    
+            "lr": base_lr
+        })
+
+        optimizer = self.optimizer_class(grouped_params,
+                                         betas=self.optimizer_params.get("betas", (0.9, 0.999)),
+                                         eps=self.optimizer_params.get("eps", 1e-8))
+        return optimizer
+
     ###########################################################################
     # 1) Compute ExpSE Penalty
     ###########################################################################
+
     def compute_expse_penalty(self,
                               theta_probs: torch.Tensor,
                               ref_probs_full: torch.Tensor,
@@ -302,43 +419,42 @@ class RegularizedTrainer(Trainer):
     ###########################################################################
     # 2) Training / Validation
     ###########################################################################
+
     def train(self, full_dataset: bool = False) -> List[Dict[str, float]]:
         """
         Standard train method across self.num_epochs.
         Returns a list of per-epoch stats:
             [{'epoch': 1, 'train_loss': x, 'val_loss': y, 'accuracy': z, ...}, ...]
         """
-        if full_dataset:
-            train_loader = self.data_module.get_full_train_dataloader()
-        else:
-            train_loader, val_loader = self.data_module.get_dataloaders()
-
-        # If we do want a separate val loader, we can do:
-        _, val_loader = self.data_module.get_dataloaders()
-
         # We'll store epoch stats
         history = []
         for epoch in range(self.num_epochs):
+            if full_dataset:
+                train_loader = self.data_module.get_full_train_dataloader()
+            else:
+                train_loader, val_loader = self.data_module.get_dataloaders()
             epoch_stat = self._train_one_epoch(train_loader, epoch)
             self.model_ref.load_state_dict(self.model_theta.state_dict())
             for param in self.model_ref.parameters():
                 param.requires_grad = False
+            
+            metrics = {"epoch": epoch_stat['epoch'], 
+                       "train_loss": epoch_stat['train_loss'], 
+                       "lambda": epoch_stat['lambda']}
+            if (epoch + 1) % self.test_interval == 0:
+                # run test
+                logging.info(f"Running validation at epoch {epoch + 1}")
+                val_loss, val_acc, val_prec, val_rec, val_f1 = self.test()
+                logging.info(f"Val metrics: loss={val_loss:.4f}, acc={val_acc:.4f}, f1={val_f1:.4f}")
 
-            # Evaluate on val set if you want per-epoch logging:
-            val_loss, acc, prec, rec, f1 = self.validate(val_loader)
-
-            epoch_stat.update({
-                "val_loss": val_loss,
-                "accuracy": acc,
-                "precision": prec,
-                "recall": rec,
-                "f1": f1
-            })
-            history.append(epoch_stat)
-
-            # Step LR scheduler if in use
-            if self.scheduler:
-                self.scheduler.step(val_loss)
+                metrics.update({
+                    "test_loss": val_loss,
+                    "accuracy": val_acc,
+                    "precision": val_prec,
+                    "recall": val_rec,
+                    "f1": val_f1
+                })
+            history.append(metrics)
 
         return history
 
@@ -358,73 +474,88 @@ class RegularizedTrainer(Trainer):
             self.model_ref.load_state_dict(self.model_theta.state_dict())
             for param in self.model_ref.parameters():
                 param.requires_grad = False
-            # Optionally no val set here, or we can do a test on real test set
-            # We'll omit for brevity.
-            history.append(epoch_stat)
+            
+            metrics = {"epoch": epoch_stat['epoch'], 
+                       "train_loss": epoch_stat['train_loss'], 
+                       "lambda": epoch_stat['lambda']}
+            if (epoch + 1) % self.test_interval == 0:
+                # run test
+                val_loss, val_acc, val_prec, val_rec, val_f1 = self.test()
+                metrics.update({
+                    "test_loss": val_loss,
+                    "accuracy": val_acc,
+                    "precision": val_prec,
+                    "recall": val_rec,
+                    "f1": val_f1
+                })
+            history.append(metrics)
 
         return history
 
     def _train_one_epoch(self, loader, epoch_idx: int) -> Dict[str, float]:
-        self.model_ref.eval()     # Typically keep reference model fixed
+        """
+        Train the policy model for one epoch. Return as many metrics as we can:
+          {
+            "epoch": int,
+            "train_loss": float
+          }
+        """
+        self.model_ref.eval()     # Keep reference model fixed
         self.model_theta.train()  # We update the policy model
 
         total_loss = 0.0
         total_steps = 0
-        total_loss = 0.0
         running_loss = 0.0
+
+        # For training metrics
+        all_preds = []
+        all_labels_list = []
+
+
         progress_bar = tqdm(
             loader, 
             desc=f"Epoch {epoch_idx+1}/{self.num_epochs}",
             mininterval=10.0,
-            miniters=max(len(loader)//1000, 1), 
+            miniters=max(len(loader)//1000, 1),
             smoothing=0,  # Disable smoothing
             leave=False
         )
-        for batch in progress_bar:
-            # 1) Zero out gradients
+
+        for batch_idx, batch in enumerate(progress_bar):
+            # 0) Possibly compute a "global_step" if you have a lambda schedule
+            global_step = epoch_idx * len(loader) + batch_idx
+            current_lambda = self._get_current_lambda(epoch_idx=epoch_idx,global_step=global_step)
+
+            # 1) Zero out grads
             self.optimizer.zero_grad()
 
-            # 2) Forward pass for policy model (theta) on full text
+            # 2) Forward pass (policy model)
             full_ids = batch["full_input_ids"].to(self.device)
             full_mask = batch["full_attention_mask"].to(self.device)
             labels = batch["labels"].to(self.device)
 
             policy_out = self.model_theta(full_ids, full_mask)
-            # For huggingface style models, the actual logits might be in policy_out.logits
-            # For a custom model, might be direct. We'll handle both:
-            if hasattr(policy_out, "logits"):
-                logits_theta = policy_out.logits
-            else:
-                logits_theta = policy_out
+            logits_theta = policy_out.logits if hasattr(policy_out, "logits") else policy_out
+
             # Classification loss
             cls_loss = self.cls_loss_fn(logits_theta, labels)
 
             # 3) Probability predictions for policy
             probs_theta = F.softmax(logits_theta, dim=1)
 
-            # 4) Forward pass for reference model: 
-            #    (a) on full text
+            # 4) Reference forward passes
             with torch.no_grad():
                 ref_out_full = self.model_ref(full_ids, full_mask)
-                if hasattr(ref_out_full, "logits"):
-                    logits_ref_full = ref_out_full.logits
-                else:
-                    logits_ref_full = ref_out_full
+                logits_ref_full = ref_out_full.logits if hasattr(ref_out_full, "logits") else ref_out_full
                 ref_probs_full = F.softmax(logits_ref_full, dim=1)
 
-            # (b) On z-only text
-            z_ids = batch["z_input_ids"].to(self.device)
-            z_mask = batch["z_attention_mask"].to(self.device)
-            
-            with torch.no_grad():
+                z_ids = batch["z_input_ids"].to(self.device)
+                z_mask = batch["z_attention_mask"].to(self.device)
                 ref_out_z = self.model_ref(z_ids, z_mask)
-                if hasattr(ref_out_z, "logits"):
-                    logits_ref_z = ref_out_z.logits
-                else:
-                    logits_ref_z = ref_out_z
+                logits_ref_z = ref_out_z.logits if hasattr(ref_out_z, "logits") else ref_out_z
                 ref_probs_z = F.softmax(logits_ref_z, dim=1)
 
-            # 5) Compute ExpSE penalty for this batch
+            # 5) Compute ExpSE penalty (user-defined function)
             expse_penalty = self.compute_expse_penalty(
                 theta_probs=probs_theta,
                 ref_probs_full=ref_probs_full,
@@ -433,29 +564,36 @@ class RegularizedTrainer(Trainer):
             )
 
             # 6) Combine losses
-            loss = cls_loss + self.lambda_reg * expse_penalty
-
+            loss = cls_loss + current_lambda * expse_penalty
             loss.backward()
             clip_grad_norm_(self.model_theta.parameters(), max_norm=self.max_grad_norm)
             self.optimizer.step()
 
-            # Step scheduler if using cosine decay
-            if self.scheduler is not None and not isinstance(self.scheduler, ReduceLROnPlateau):
+            # If scheduler is not ReduceLROnPlateau, step each iteration
+            if (self.scheduler is not None) and (not isinstance(self.scheduler, ReduceLROnPlateau)):
                 self.scheduler.step()
 
             total_loss += loss.item()
             total_steps += 1
             running_loss = (running_loss * (total_steps - 1) + loss.item()) / total_steps
-            
-            # Only update progress bar when tqdm updates (every ~5% of epoch)
+
+            # For training metrics, collect predictions
+            preds = torch.argmax(logits_theta, dim=1)
+            all_preds.extend(preds.detach().cpu().numpy())
+            all_labels_list.extend(labels.detach().cpu().numpy())
+
+            # Update progress bar
             if total_steps % max(len(loader)//20, 1) == 0:
                 progress_bar.set_postfix({
                     "avg_loss": f"{running_loss:.4f}",
-                    "lr": f"{self.optimizer.param_groups[0]['lr']:.2e}"
+                    "lr": f"{self.optimizer.param_groups[0]['lr']:.2e}",
+                    "lambda": f"{current_lambda:.3f}"
                 }, refresh=False)
 
+        # Compute final average loss
         avg_loss = total_loss / max(total_steps, 1)
-        return {"epoch": epoch_idx + 1, "train_loss": avg_loss}
+
+        return {"epoch": epoch_idx + 1, "train_loss": avg_loss, 'lambda': current_lambda}
 
     ###########################################################################
     # 3) Validation / Test
