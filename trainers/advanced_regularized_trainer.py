@@ -1,5 +1,5 @@
 import os
-import datetime
+from datetime import datetime
 import logging
     
 import torch
@@ -59,7 +59,7 @@ class RegularizedTrainer(Trainer):
         dataset_name: str = "imdb_causal_mediation",
         optimizer_params: Dict[str, Any] = None,
         batch_size: int = 32,
-        num_epochs: int = 100,
+        num_epochs: int = 10,
         device: Any = None,       
         lambda_schedule_mode: str = "piecewise",  # "piecewise", "linear", "exponential", ...
         lambda_start: float = 1.0,
@@ -162,7 +162,7 @@ class RegularizedTrainer(Trainer):
         self._lambda_piecewise_values = [
             1.0, 0.75, 0.5, 0.25, 0.1,
             0.075, 0.05, 0.025, 0.01, 0.005
-        ]  # Each for 10 epochs => total 100
+        ]  # Each for 2 epochs => total 20
         # If you want exactly your chunked approach, each block is 10 epochs.
 
         # We'll store the current lambda each step.
@@ -243,7 +243,7 @@ class RegularizedTrainer(Trainer):
                 self.scheduler = OneCycleLR(
                     self.optimizer,
                     max_lr=base_lr,
-                    total_steps=total_steps,
+                    total_steps=(self.steps_per_epoch + 1) * self.num_epochs, # ( accounting for rounding error on steps per epoch)
                     pct_start=self.warmup_ratio,  # e.g. 0.1 => 10% of cycle is warmup
                     anneal_strategy='cos',
                     final_div_factor=base_lr / (5e-7)  # or something so we end near 5e-7
@@ -613,7 +613,7 @@ class RegularizedTrainer(Trainer):
                 smoothing=0,  # Disable smoothing
                 leave=False
             )
-            for batch in tqdm(progress_bar):
+            for batch in progress_bar:
                 full_ids = batch["full_input_ids"].to(self.device)
                 full_mask = batch["full_attention_mask"].to(self.device)
                 labels = batch["labels"].to(self.device)

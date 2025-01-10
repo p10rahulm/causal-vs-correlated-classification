@@ -54,9 +54,9 @@ def run_causal_mediation_gridsearch():
     # We'll do only e.g. "albert" or whichever model(s) you prefer to test
     model_list = ["albert"]  
 
-    # 100 epochs, test every 20 epochs
-    num_epochs = 100
-    test_interval = 20
+    # 10 epochs, test every 2 epochs
+    num_epochs = 20
+    test_interval = 4
 
     # Define the lists for looping
     lr_schedules = [
@@ -66,7 +66,7 @@ def run_causal_mediation_gridsearch():
        "cyclic_triangular2"
     ]
     lambda_schedule_modes = ["piecewise", "exponential", "linear"]
-    learning_rates = [5e-5, 1e-4, 2.5e-4]
+    learning_rates = [5e-4, 2.5e-4, 1e-4]
 
     # You can either specify a single checkpoint or automatically find one. 
     # For example, let's assume you have a baseline path:
@@ -137,10 +137,10 @@ def run_causal_mediation_gridsearch():
                             device=device,
                             lr_schedule=lr_schedule_choice,
                             lambda_schedule_mode=lambda_schedule_mode,
-                            lambda_start=1.0,
+                            lambda_start=0.5,
                             lambda_end=0.005,
                             test_interval=test_interval,
-                            cycle_length_epochs=10,  # if you want 10-epoch cycles for restarts
+                            cycle_length_epochs=num_epochs//10,  # if you want 10-epoch cycles for restarts
                             classification_word="Sentiment",
                             model_name=model_name
                         )
