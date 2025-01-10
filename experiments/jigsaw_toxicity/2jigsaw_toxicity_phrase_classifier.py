@@ -1,3 +1,6 @@
+# This file runs the Bert Model with predefined best hyperparameters for 40 epochs.
+# This is because, we already have the set of best hyperparameters on the IMDB dataset.
+
 import os
 import json
 from pathlib import Path

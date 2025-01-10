@@ -1,15 +1,12 @@
-#!/usr/bin/env python3
-
+import pandas as pd
 import os
 from pathlib import Path
 import sys
 import json
 from datetime import datetime
+from sklearn.model_selection import train_test_split
 
-# Set CUDA DEVICE
 os.environ["CUDA_VISIBLE_DEVICES"] = "1"
-
-# Add project root to system path
 project_root = Path(__file__).resolve().parent
 while not (project_root / '.git').exists() and project_root != project_root.parent:
     project_root = project_root.parent
@@ -17,50 +14,34 @@ sys.path.insert(0, str(project_root))
 
 
 from tqdm import tqdm
-
 import torch
 from transformers import AutoTokenizer
 from datasets import load_dataset
 
-# Adjust imports to match your repo structure
 from models.causal_neutral_model_variations import model_variations
 from utilities.phrase_classifier_helpers import load_causal_neutral_classifier, extract_causal_and_neutral_phrases
-
-
-
-
-################################################################################
-# Main script
-################################################################################
 
 def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 1) Load the IMDB dataset from Hugging Face
-    imdb = load_dataset("imdb")
+    data = pd.read_csv('../../data/toxicity_data/train.csv')
+    X_train, X_test, y_train, y_test = train_test_split(data['comment_text'], data['toxic'], test_size=0.33, random_state=42)
 
-    # 2) We'll process each subset: 'train' and 'test'. 
-    train_data = imdb["train"]   # 25k labeled reviews
-    test_data  = imdb["test"]    # 25k labeled reviews
-
-    # 3) Create an output folder
-    output_dir = Path("data/imdb_sentiment")
+    output_dir = Path("../../data/jigsaw_toxicity")
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # 4) For each model in {distilbert, bert}, 
-    #    precompute causal/neutral phrases for every example in train/test.
+
     for model_name in ["distilbert", "bert"]:
         print(f"\n==== Precomputing splits for {model_name} ====")
-        # a) Load the classifier model and corresponding tokenizer
         classifier_model = load_causal_neutral_classifier(model_name, device)
         tokenizer = classifier_model.tokenizer
 
-        # b) Process train set
-        print(f"Processing train set: {len(train_data)} examples")
+        print(f"Processing train set: {len(X_train)} examples")
         train_records = []
-        for example in tqdm(train_data, desc=f"Processing train set for {model_name}"):
-            text  = example["text"]
-            label = example["label"]  # 0=neg, 1=pos in IMDB
+        for i in tqdm(range(len(X_train)), desc=f"Processing train set for {model_name}"):
+            text  = X_train.loc[i]
+            label = y_train.loc[i]
+            print(text, label)
             causal_phrases, neutral_phrases = extract_causal_and_neutral_phrases(
                 text, classifier_model, tokenizer
             )
@@ -73,12 +54,11 @@ def main():
             }
             train_records.append(record)
 
-        # c) Process test set
-        print(f"Processing test set: {len(test_data)} examples")
+        print(f"Processing test set: {len(X_test)} examples")
         test_records = []
-        for example in tqdm(test_data, desc=f"Processing test set for {model_name}"):
-            text  = example["text"]
-            label = example["label"]
+        for example in tqdm(range(len(X_test)), desc=f"Processing test set for {model_name}"):
+            text  = X_test.loc[i]
+            label = y_test.loc[i]
             causal_phrases, neutral_phrases = extract_causal_and_neutral_phrases(
                 text, classifier_model, tokenizer
             )

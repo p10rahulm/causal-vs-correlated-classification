@@ -1,3 +1,6 @@
+# For the jigsaw_toxicity dataset, simply add the argument `--dataset jigsaw_toxicity'
+# This dataset with 1000 instances is present in the file: outputs/jigsaw_toxicity_phrase_dataset/jigsaw_toxicity_toxic_phrases_20250109_121612.json
+
 import os
 import sys
 from pathlib import Path
