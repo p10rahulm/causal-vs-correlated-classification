@@ -1,0 +1,2 @@
+model,epochs,final_loss,test_loss,test_accuracy,test_precision,test_recall,test_f1
+deberta,10,0.6501734180164337,0.6515707399082183,0.7858,0.80833061277418,0.7858,0.7818141313283747
