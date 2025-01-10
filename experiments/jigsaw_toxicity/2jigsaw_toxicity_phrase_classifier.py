@@ -54,32 +54,37 @@ def get_hyperparameters(model_name, hyperparams):
             'learning_rate': get_model_specific_lr(model_name)  # Use model-specific LR even for fallback
         }
 
-def run_imdb_sentiment_experiment():
+def run_jigsaw_toxicity_experiment():
     # Experiment parameters
-    models = ["deberta", "electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "modern_bert"]
-    classification_word = "Sentiment"
-    epochs = [10, 20, 30, 40]
+    # models = ["deberta", "electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "modern_bert"]
+    models = ["bert"]
+    # classification_word = "Sentiment"
+    classification_word = "Toxic"
+    # epochs = [10, 20, 30, 40]
+    epochs = [40]
     batch_size = 16
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load hyperparameters
-    hyperparams = load_hyperparameters('models/optimal_wz_classifier_validation_hyperparams.json')
+    hyperparams = load_hyperparameters('../../models/optimal_wz_classifier_validation_hyperparams.json')
 
 
     # Prepare data loader
     # file_path = "outputs/imdb_train_sentiment_analysis.json"  # Update this path if necessary
-    file_path = "outputs/imdb_phrase_dataset/imdb_sentiment_phrases_20250107_121028.json"
+    # file_path = "outputs/imdb_phrase_dataset/imdb_sentiment_phrases_20250107_121028.json"
+    
+    file_path = "../../outputs/jigsaw_toxicity_phrase_dataset/jigsaw_toxicity_toxic_phrases_20250109_121612.json"
     data_module = CausalNeutralDataModule(file_path, classification_word)
 
         # Training parameters for the new trainer
-    training_params = {
-        'layer_wise_lr_decay': 0.95,
-        'max_grad_norm': 5.0,
-        'warmup_ratio': 0.1,
-        'cosine_decay': True,
-        'drop_lr_on_plateau': False,
-        'patience': 3
-    }
+    # training_params = {
+    #     'layer_wise_lr_decay': 0.95,
+    #     'max_grad_norm': 5.0,
+    #     'warmup_ratio': 0.1,
+    #     'cosine_decay': True,
+    #     'drop_lr_on_plateau': False,
+    #     'patience': 3
+    # }
     training_params = {
         'layer_wise_lr_decay': 0.8,        # Steeper decay (was 0.95) since lower layers are more important for phrase-level features
         'max_grad_norm': 1.0,              # Tighter gradient clipping (was 5.0) for more stable training
@@ -93,7 +98,7 @@ def run_imdb_sentiment_experiment():
 
     # Prepare results file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = "outputs/imdb_phrase_classification"
+    results_dir = "outputs/jigsaw_phrase_classification"
     os.makedirs(results_dir, exist_ok=True)
     results_file = os.path.join(results_dir, f"wz_training_results_{timestamp}.csv")
 
@@ -143,7 +148,7 @@ def run_imdb_sentiment_experiment():
                     batch_size=batch_size,
                     num_epochs=num_epochs,
                     device=device,
-                    dataset_name="imdb_sentiment",
+                    dataset_name="jigsaw_toxicity",
                     **training_params
                 )
 
@@ -164,10 +169,10 @@ def run_imdb_sentiment_experiment():
                 csvfile.flush()  # Ensure data is written immediately
 
                 # Save the trained model
-                save_trained_model(trainer, f"imdb_sentiment_wz_{model_name}_{num_epochs}epochs",
+                save_trained_model(trainer, f"jigsaw_toxicity_wz_{model_name}_{num_epochs}epochs",
                                 int(hidden_layer[0]))
 
         print(f"Experiments completed. Results saved to {results_file}")
 
 if __name__ == "__main__":
-    run_imdb_sentiment_experiment()
+    run_jigsaw_toxicity_experiment()

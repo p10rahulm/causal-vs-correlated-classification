@@ -8,17 +8,24 @@ import spacy
 from spacy.cli import download
 import random
 import numpy as np
+import sys
 
 
 
 def get_api_key():
+    project_root = Path(__file__).resolve().parent
+    while not (project_root / '.git').exists() and project_root != project_root.parent:
+        project_root = project_root.parent
+    sys.path.insert(0, str(project_root))
+
     try:
         try: 
             with open("_claude_key.txt", "r") as file:
                 return file.read().strip()
         except:
-            with open("../_claude_key.txt", "r") as file:
+            with open(str(project_root)+"/_claude_key.txt", "r") as file:
                 return file.read().strip()
+                
     except FileNotFoundError:
         print("Error: _claude_key.txt file not found.")
         return None

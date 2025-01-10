@@ -64,7 +64,7 @@ DATASET_CONFIGS = {
     'jigsaw_toxicity': DatasetConfig(
         name='jigsaw_toxicity',
         classification_word='toxic',
-        file_path=Path('data/toxicity_data/train.csv'),
+        file_path=Path('../../data/toxicity_data/train.csv'),
         input_column='comment_text',
         label_column='toxic',
         sample_size=1000
@@ -99,7 +99,7 @@ def clean_text(text: str) -> str:
 
 def read_examples_from_file(classification_word: str) -> str:
     """Read example templates from file with proper error handling."""
-    template_dir = Path("prompt_templates/wz_classification")
+    template_dir = Path("../../prompt_templates/wz_classification")
     file_path = template_dir / f"{classification_word.lower()}.txt"
     
     try:
@@ -174,7 +174,6 @@ def process_texts(
                 continue
                 
             analysis = classify_phrases(extracted_phrases, clean_text_str, classification_word, dataset)
-            
             if analysis:
                 result = {
                     'text': clean_text_str,
@@ -246,8 +245,7 @@ def main() -> None:
     """Main execution function."""
     args = parse_args()
     set_seed(42)
-    print(args)
-    sys.exit()
+
     # Get dataset configuration
     config = DATASET_CONFIGS[args.dataset]
     if args.sample_size:
@@ -255,7 +253,7 @@ def main() -> None:
     
     # Create output directory with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = Path('outputs') / f"{config.name}_phrase_dataset"
+    output_dir = Path('../../outputs') / f"{config.name}_phrase_dataset"
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
     except Exception as e:
@@ -267,7 +265,6 @@ def main() -> None:
         texts, labels = load_dataset_samples(config)
         
         output_file = output_dir / f"{config.name}_{config.classification_word.lower()}_phrases_{timestamp}.json"
-        
         process_texts(
             texts,
             labels,
@@ -275,7 +272,6 @@ def main() -> None:
             output_file=output_file,
             dataset=config.name
         )
-        
         logger.info(
             f"Processed {len(texts)} texts and saved results to {output_file}"
         )

@@ -8,7 +8,7 @@ causal mediation. It:
   2) Loads a baseline model checkpoint as reference (P_ref).
   3) Copies that into a new model as policy (P_theta).
   4) Trains for 5 more epochs with a RegularizedTrainer that implements
-     the ExpSE penalty or similar.
+    the ExpSE penalty or similar.
   5) Logs per-epoch validation losses to a CSV file.
 """
 

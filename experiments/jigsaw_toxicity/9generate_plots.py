@@ -4,7 +4,7 @@ Generates many plots from:
   1) IMDB results (test set) from
      outputs/imdb_sentiment_combined/results_all_20250107_122057.csv
   2) Three synthetic datasets (OOD) from
-     outputs/ood_sentiment_comprehensive_test/results_20250106_150841.csv
+    outputs/ood_sentiment_comprehensive_test/results_20250106_150841.csv
 
 We rename experiment_type in the second file so that it matches:
     naive_baseline -> naive_baseline
