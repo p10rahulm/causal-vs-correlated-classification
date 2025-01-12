@@ -60,9 +60,9 @@ def run_causal_mediation_gridsearch():
 
     # Define the lists for looping
     lr_schedules = [
-    #    "cosine_warm_restarts",
-    #    "one_cycle",
-    #    "cyclic_triangular",
+       "cosine_warm_restarts",
+       "one_cycle",
+       "cyclic_triangular",
        "cyclic_triangular2"
     ]
     lambda_schedule_modes = ["piecewise", "exponential", "linear"]

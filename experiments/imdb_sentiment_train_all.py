@@ -22,7 +22,7 @@ from data_loaders.common.causal_classification import CausalPhraseDataModule
 from data_loaders.common.regularized import RegularizedDataModule
 
 from trainers.trainer import Trainer
-from trainers.regularized_classification_trainer import RegularizedTrainer
+from trainers._regularized_classification_trainer import RegularizedTrainer
 from optimizers.optimizer_params import optimizer_configs
 
 

@@ -35,7 +35,7 @@ sys.path.insert(0, str(project_root))
 from data_loaders.imdb_sentiment.causal_reg_data_loader import CausalRegDataModule
 from models.causal_neutral_model_variations import model_variations
 from optimizers.optimizer_params import optimizer_configs
-from trainers.regularized_classification_trainer import RegularizedTrainer
+from trainers._regularized_classification_trainer import RegularizedTrainer
 from trainers.trainer import save_trained_model
 from models.model_utilities import load_trained_model, find_model_file
 

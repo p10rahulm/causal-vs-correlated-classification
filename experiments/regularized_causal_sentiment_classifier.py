@@ -16,7 +16,7 @@ from data_loaders.classification_data_loaders.causal_original_sentiment_imdb imp
     CausalPhraseWithOriginalIMDBDataModule
 from models.causal_neutral_model_variations import model_variations
 # from trainers.regularized_trainer import RegularizedTrainer
-from trainers.regularized_classification_trainer import RegularizedTrainer
+from trainers._regularized_classification_trainer import RegularizedTrainer
 from trainers.trainer import save_trained_model
 from optimizers.optimizer_params import optimizer_configs
 from models.model_utilities import load_trained_model, find_model_file
