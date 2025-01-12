@@ -524,7 +524,9 @@ class Trainer:
             # 4) Mid-epoch validation every 4 epochs (or final epoch)
             val_loss, accuracy, precision, recall, f1 = 0, 0, 0, 0, 0
             if ((epoch + 1) % self.num_epochs_eval == 0) or ((epoch + 1) == num_epochs):
+                logging.info(f"Running validation at epoch {epoch + 1}")
                 val_loss, accuracy, precision, recall, f1 = self.test()
+                logging.info(f"Val metrics: loss={val_loss:.4f}, acc={accuracy:.4f}, f1={f1:.4f}")
 
             # If using ReduceLROnPlateau, step with training or val loss
             if self.scheduler is not None and isinstance(self.scheduler, ReduceLROnPlateau):
