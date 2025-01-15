@@ -1,0 +1,57 @@
+dataset,model,model_type,epochs,lambda_reg,lr_schedule,lambda_schedule_mode,lr_value,test_loss,test_accuracy,test_precision,test_recall,test_f1,model_dir
+OOD Sentiment,albert,causal_only,20,,,,,0.3958699032664299,0.8285714285714286,0.7874794069192751,0.9245647969052224,0.8505338078291815,trained_models/imdb_causal_only_albert_20epochs/sentiment
+OOD Sentiment,albert,naive_baseline,20,,,,,0.22505006939172745,0.9193877551020408,0.8882978723404256,0.9690522243713733,0.9269195189639223,trained_models/imdb_sentiment_naive_baseline_albert_20epochs/sentiment
+OOD Sentiment,albert,regularized,,,cyclic,piecewise,0.0005,0.219077680259943,0.9193877551020408,0.8855633802816901,0.9729206963249516,0.9271889400921659,trained_models/imdb_causal_mediation_albert_cyclic_triangular2_piecewise_lr0.0005/sentiment
+OOD Sentiment,albert,regularized,,,cyclic,piecewise,0.0005,0.26912181824445724,0.9010204081632653,0.8595890410958904,0.9709864603481625,0.9118982742960945,trained_models/imdb_causal_mediation_albert_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+OOD Sentiment,bert,causal_only,20,,,,,0.4752749502658844,0.7857142857142857,0.7183499288762447,0.97678916827853,0.8278688524590164,trained_models/imdb_causal_only_bert_20epochs/sentiment
+OOD Sentiment,bert,naive_baseline,20,,,,,0.3110436424612999,0.8663265306122448,0.8260135135135135,0.9458413926499033,0.8818755635707844,trained_models/imdb_sentiment_naive_baseline_bert_20epochs/sentiment
+OOD Sentiment,bert,regularized,,,cyclic,piecewise,0.0005,0.34480682760477066,0.8540816326530613,0.8127090301003345,0.9400386847195358,0.8717488789237668,trained_models/imdb_causal_mediation_bert_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+OOD Sentiment,deberta,causal_only,20,,,,,0.5015718638896942,0.7602040816326531,0.7175925925925926,0.8994197292069632,0.7982832618025751,trained_models/imdb_causal_only_deberta_20epochs/sentiment
+OOD Sentiment,deberta,naive_baseline,20,,,,,0.38359711319208145,0.8285714285714286,0.7922948073701842,0.9148936170212766,0.8491921005385996,trained_models/imdb_sentiment_naive_baseline_deberta_20epochs/sentiment
+
+OOD Sentiment,distilbert,causal_only,20,,,,,0.40002573281526566,0.8010204081632653,0.7267605633802817,0.9980657640232108,0.841075794621027,trained_models/imdb_causal_only_distilbert_20epochs/sentiment
+OOD Sentiment,distilbert,naive_baseline,20,,,,,0.2841026000678539,0.8836734693877552,0.8375209380234506,0.9671179883945842,0.8976660682226212,trained_models/imdb_sentiment_naive_baseline_distilbert_20epochs/sentiment
+OOD Sentiment,distilbert,regularized,,,cyclic,piecewise,0.0005,0.2719009146094322,0.8877551020408163,0.8466780238500852,0.9613152804642167,0.9003623188405797,trained_models/imdb_causal_mediation_distilbert_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+OOD Sentiment,electra_small_discriminator,causal_only,20,,,,,0.6415105313062668,0.560204081632653,0.5465367965367965,0.97678916827853,0.7009021512838306,trained_models/imdb_causal_only_electra_small_discriminator_20epochs/sentiment
+OOD Sentiment,electra_small_discriminator,naive_baseline,20,,,,,0.7262009233236313,0.5928571428571429,0.5726600985221675,0.8994197292069632,0.6997742663656885,trained_models/imdb_sentiment_naive_baseline_electra_small_discriminator_20epochs/sentiment
+OOD Sentiment,electra_small_discriminator,regularized,,,cyclic,piecewise,0.0005,0.7503389865159988,0.6020408163265306,0.5790784557907845,0.8994197292069632,0.7045454545454545,trained_models/imdb_causal_mediation_electra_small_discriminator_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+OOD Sentiment,modern_bert,causal_only,20,,,,,0.574525997042656,0.7214285714285714,0.7125435540069687,0.7911025145067698,0.7497708524289644,trained_models/imdb_causal_only_modern_bert_20epochs/sentiment
+OOD Sentiment,modern_bert,naive_baseline,20,,,,,0.5057600438594818,0.75,0.7361111111111112,0.8201160541586073,0.7758462946020127,trained_models/imdb_sentiment_naive_baseline_modern_bert_20epochs/sentiment
+OOD Sentiment,modern_bert,regularized,,,cyclic,piecewise,0.0005,0.5164325833320618,0.7520408163265306,0.7290969899665551,0.8433268858800773,0.7820627802690583,trained_models/imdb_causal_mediation_modern_bert_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+OOD Sentiment,roberta,causal_only,20,,,,,0.3559767082333565,0.8367346938775511,0.7733537519142419,0.97678916827853,0.8632478632478633,trained_models/imdb_causal_only_roberta_20epochs/sentiment
+OOD Sentiment,roberta,naive_baseline,20,,,,,0.3097396194934845,0.8724489795918368,0.8266666666666667,0.9593810444874274,0.8880931065353624,trained_models/imdb_sentiment_naive_baseline_roberta_20epochs/sentiment
+OOD Sentiment,roberta,regularized,,,cyclic,piecewise,0.0005,0.2940482869744301,0.8857142857142857,0.8461538461538461,0.9574468085106383,0.8983666061705989,trained_models/imdb_causal_mediation_roberta_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+CF Test Ltd Paper,albert,causal_only,20,,,,,0.5297240912914276,0.7151639344262295,0.6897810218978102,0.7777777777777778,0.7311411992263056,trained_models/imdb_causal_only_albert_20epochs/sentiment
+CF Test Ltd Paper,albert,naive_baseline,20,,,,,0.37041279673576355,0.8360655737704918,0.8381742738589212,0.831275720164609,0.8347107438016529,trained_models/imdb_sentiment_naive_baseline_albert_20epochs/sentiment
+CF Test Ltd Paper,albert,regularized,,,cyclic,piecewise,0.0005,0.3459227532148361,0.8524590163934426,0.8518518518518519,0.8518518518518519,0.8518518518518519,trained_models/imdb_causal_mediation_albert_cyclic_triangular2_piecewise_lr0.0005/sentiment
+CF Test Ltd Paper,albert,regularized,,,cyclic,piecewise,0.0005,0.41383369266986847,0.819672131147541,0.7881040892193308,0.8724279835390947,0.8281250000000001,trained_models/imdb_causal_mediation_albert_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+CF Test Ltd Paper,bert,causal_only,20,,,,,0.5924405753612518,0.7131147540983607,0.6655948553054662,0.8518518518518519,0.7472924187725631,trained_models/imdb_causal_only_bert_20epochs/sentiment
+CF Test Ltd Paper,bert,naive_baseline,20,,,,,0.5442169606685638,0.7663934426229508,0.7698744769874477,0.757201646090535,0.7634854771784233,trained_models/imdb_sentiment_naive_baseline_bert_20epochs/sentiment
+CF Test Ltd Paper,bert,regularized,,,cyclic,piecewise,0.0005,0.6038582623004913,0.7540983606557377,0.7430830039525692,0.7736625514403292,0.7580645161290323,trained_models/imdb_causal_mediation_bert_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+CF Test Ltd Paper,deberta,causal_only,20,,,,,0.6042837798595428,0.6659836065573771,0.6941747572815534,0.588477366255144,0.6369710467706013,trained_models/imdb_causal_only_deberta_20epochs/sentiment
+CF Test Ltd Paper,deberta,naive_baseline,20,,,,,0.5558388531208038,0.7377049180327869,0.7860696517412935,0.6502057613168725,0.7117117117117117,trained_models/imdb_sentiment_naive_baseline_deberta_20epochs/sentiment
+
+CF Test Ltd Paper,distilbert,causal_only,20,,,,,0.5736138224601746,0.7008196721311475,0.6336088154269972,0.9465020576131687,0.759075907590759,trained_models/imdb_causal_only_distilbert_20epochs/sentiment
+CF Test Ltd Paper,distilbert,naive_baseline,20,,,,,0.478224977850914,0.7909836065573771,0.7854251012145749,0.7983539094650206,0.7918367346938775,trained_models/imdb_sentiment_naive_baseline_distilbert_20epochs/sentiment
+CF Test Ltd Paper,distilbert,regularized,,,cyclic,piecewise,0.0005,0.50052510201931,0.7684426229508197,0.7777777777777778,0.7489711934156379,0.7631027253668763,trained_models/imdb_causal_mediation_distilbert_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+CF Test Ltd Paper,electra_small_discriminator,causal_only,20,,,,,0.7152191698551178,0.48565573770491804,0.4906976744186046,0.8683127572016461,0.6270430906389302,trained_models/imdb_causal_only_electra_small_discriminator_20epochs/sentiment
+CF Test Ltd Paper,electra_small_discriminator,naive_baseline,20,,,,,0.8693287074565887,0.45491803278688525,0.4637223974763407,0.6049382716049383,0.525,trained_models/imdb_sentiment_naive_baseline_electra_small_discriminator_20epochs/sentiment
+CF Test Ltd Paper,electra_small_discriminator,regularized,,,cyclic,piecewise,0.0005,0.9147245585918427,0.45491803278688525,0.4646153846153846,0.6213991769547325,0.5316901408450704,trained_models/imdb_causal_mediation_electra_small_discriminator_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+CF Test Ltd Paper,modern_bert,causal_only,20,,,,,0.7078046798706055,0.6004098360655737,0.5967741935483871,0.6090534979423868,0.6028513238289206,trained_models/imdb_causal_only_modern_bert_20epochs/sentiment
+CF Test Ltd Paper,modern_bert,naive_baseline,20,,,,,0.7353224456310272,0.5840163934426229,0.5862068965517241,0.5596707818930041,0.5726315789473684,trained_models/imdb_sentiment_naive_baseline_modern_bert_20epochs/sentiment
+CF Test Ltd Paper,modern_bert,regularized,,,cyclic,piecewise,0.0005,0.7305251955986023,0.5799180327868853,0.5811965811965812,0.5596707818930041,0.570230607966457,trained_models/imdb_causal_mediation_modern_bert_cyclic_triangular_piecewise_lr0.0005/sentiment
+
+CF Test Ltd Paper,roberta,causal_only,20,,,,,0.5548086613416672,0.7377049180327869,0.7046263345195729,0.8148148148148148,0.7557251908396947,trained_models/imdb_causal_only_roberta_20epochs/sentiment
+CF Test Ltd Paper,roberta,naive_baseline,20,,,,,0.5324890911579132,0.7622950819672131,0.757085020242915,0.7695473251028807,0.763265306122449,trained_models/imdb_sentiment_naive_baseline_roberta_20epochs/sentiment
+CF Test Ltd Paper,roberta,regularized,,,cyclic,piecewise,0.0005,0.5246409475803375,0.7663934426229508,0.7676348547717843,0.7613168724279835,0.7644628099173555,trained_models/imdb_causal_mediation_roberta_cyclic_triangular_piecewise_lr0.0005/sentiment
+

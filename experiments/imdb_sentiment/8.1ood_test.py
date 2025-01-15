@@ -11,7 +11,7 @@ from transformers import AutoTokenizer
 from tqdm import tqdm
 
 # Set CUDA DEVICE
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
