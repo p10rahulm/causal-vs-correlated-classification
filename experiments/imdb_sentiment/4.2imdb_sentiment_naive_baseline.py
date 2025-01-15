@@ -35,13 +35,14 @@ def run_imdb_sentiment_experiment():
 
     # List of models to run
     models = [
-        "albert",
-        "bert",
-        "distilbert",
-        "roberta",
-        "electra_small_discriminator",
-        "modern_bert",
-        "deberta",
+        # "albert",
+        # "bert",
+        # "distilbert",
+        # "roberta",
+        "roberta_large"
+        # "electra_small_discriminator",
+        # "modern_bert",
+        # "deberta",
     ]
 
     # Classification setup
@@ -59,7 +60,7 @@ def run_imdb_sentiment_experiment():
         "warmup_ratio": 0.1,
         "cosine_decay": False,                # turn off cosine; we'll use cycic triangular
         "drop_lr_on_plateau": False,
-        "lr_schedule": "cyclic_triangular",
+        "lr_schedule": "cyclic_triangular2",
         "cycle_length_epochs": num_epochs // 10,  # e.g. 20//10 = 2
         "num_epochs_eval": test_interval,
     }

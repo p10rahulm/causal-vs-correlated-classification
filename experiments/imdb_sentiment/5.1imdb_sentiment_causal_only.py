@@ -49,6 +49,7 @@ def run_causal_only_experiment():
         "bert",
         "distilbert",
         "roberta",
+        "roberta_large",
         "electra_small_discriminator",
         "modern_bert",
         "deberta",
@@ -119,7 +120,7 @@ def run_causal_only_experiment():
                 warmup_ratio=0.1,
                 cosine_decay=False,            # Turn off default cos decay
                 drop_lr_on_plateau=False,
-                lr_schedule="cyclic_triangular",
+                lr_schedule="cyclic_triangular2",
                 cycle_length_epochs=num_epochs // 10,  # e.g. 20//10=2
                 # We'll do mid-epoch validation every 4 epochs *inside*
                 # trainer.train_on_full_dataset, as you coded.

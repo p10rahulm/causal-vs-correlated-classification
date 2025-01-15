@@ -63,11 +63,17 @@ def create_model_variations() -> Dict[str, Dict[str, Callable]]:
         "albert": "albert-base-v2",
         "electra_small_discriminator": "google/electra-small-discriminator",
         "bart": "facebook/bart-base",
-        "xlnet": "xlnet-base-cased",
+        # "xlnet": "xlnet-base-cased",
         "minilm": "microsoft/MiniLM-L12-H384-uncased",
         "tinybert": "huawei-noah/TinyBERT_General_4L_312D",
         "distilroberta": "distilroberta-base",
-        "modern_bert": "answerdotai/ModernBERT-base"
+        "modern_bert": "answerdotai/ModernBERT-base",
+        "xlnet": "xlnet-large-cased",  # Updated to large
+        "deberta": "microsoft/deberta-v3-large",
+        "roberta_large": "roberta-large",
+        "albert_xxlarge": "albert-xxlarge-v2",
+        "electra_large": "google/electra-large-discriminator",
+        "xlm_roberta": "xlm-roberta-large",
     }
     
     # Get standard hidden layer configurations

@@ -174,26 +174,23 @@ class Trainer:
             else:
                 return None
 
-        elif self.lr_schedule.lower() == 'cyclic_triangular':
-            # For example, cyclical schedule over `cycle_length_epochs`.
-            # Step size up is half the cycle, step size down is the other half.
+        elif self.lr_schedule in ["cyclic_triangular", "cyclic_triangular2"]:
+            if self.optimizer_params["lr"] < 1e-10:
+                raise ValueError("base_lr must be >= 1e-10 for cyclic schedules")
+            # cycle_length_epochs = 10 means we want 10 epochs per cycle
             step_size_up = (steps_per_epoch * self.cycle_length_epochs) // 2
-            
-            # Base LR (lowest) can be smaller, or just use your normal LR. 
-            # Typically you'd specify `base_lr` < `max_lr`.
+            mode = "triangular2" if self.lr_schedule == "cyclic_triangular2" else "triangular"
             base_lr = self.optimizer_params.get("base_lr_min", 5e-6) 
             max_lr = self.optimizer_params["lr"]  # The "regular" LR you pass in.
-
-            # Create a CyclicLR
             return CyclicLR(
                 optimizer,
                 base_lr=base_lr,
                 max_lr=max_lr,
                 step_size_up=step_size_up,
-                mode='triangular',
+                mode=mode,
                 cycle_momentum=False
             )
-
+        
         elif self.lr_schedule.lower() == 'one_cycle':
             total_training_steps = steps_per_epoch * total_epochs
             return OneCycleLR(
