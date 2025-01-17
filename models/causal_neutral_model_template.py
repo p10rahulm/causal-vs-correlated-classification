@@ -3,13 +3,29 @@ import torch.nn as nn
 from transformers import AutoModel, AutoConfig, AutoTokenizer
 
 class CausalNeutralClassifier(nn.Module):
-    def __init__(self, model_name, classification_word, num_classes=2, dropout_rate=0.1, hidden_layers=[], freeze_encoder=True):
+    def __init__(self, model_name, classification_word, num_classes=2, dropout_rate=0.1, hidden_layers=[], freeze_encoder=True, max_length=1024):
         super().__init__()
         self.model_name = model_name
         self.classification_word = classification_word
+        # Get original config to check max position embeddings
+        original_config = AutoConfig.from_pretrained(model_name)
+        original_max_length = original_config.max_position_embeddings
+        
+        # If original length is smaller than desired, keep original
+        self.max_length = min(original_max_length, max_length)
+        
         self.config = AutoConfig.from_pretrained(model_name)
+        self.config.max_position_embeddings = self.max_length
+        self.config.max_length = self.max_length
         self.encoder = AutoModel.from_pretrained(model_name, config=self.config)
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        # self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        # Initialize tokenizer with max length
+        self.tokenizer = AutoTokenizer.from_pretrained(
+            model_name,
+            model_max_length=self.max_length,
+            padding_side='right',  # Ensure consistent padding
+            truncation_side='right'  # Truncate from the right side
+        )
         self.num_hidden_layers = len(hidden_layers)
         self.dropout = nn.Dropout(dropout_rate)
 
@@ -42,6 +58,16 @@ class CausalNeutralClassifier(nn.Module):
         for param in self.encoder.parameters():
             param.requires_grad = False
 
+    def preprocess_text(self, text):
+        """Helper method to preprocess text with correct truncation"""
+        return self.tokenizer(
+            text,
+            padding='max_length',
+            truncation=True,
+            max_length=self.config.max_length,
+            return_tensors='pt'
+        )
+
     def unfreeze_encoder(self):
         for param in self.encoder.parameters():
             param.requires_grad = True
@@ -56,6 +82,6 @@ class CausalNeutralClassifier(nn.Module):
 
 def create_model(model_name, classification_word, hidden_layers=[],
                  device='cuda' if torch.cuda.is_available() else 'cpu',
-                 freeze_encoder=True):
-    model = CausalNeutralClassifier(model_name, classification_word, hidden_layers=hidden_layers, freeze_encoder=freeze_encoder)
+                 freeze_encoder=True, max_length=1024):
+    model = CausalNeutralClassifier(model_name, classification_word, hidden_layers=hidden_layers, freeze_encoder=freeze_encoder, max_length=max_length)
     return model.to_device(device)

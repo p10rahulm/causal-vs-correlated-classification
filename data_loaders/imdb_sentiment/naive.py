@@ -5,13 +5,14 @@ from data_loaders.common.base_data_module import BaseDataModule
 
 
 class IMDBDataModule(BaseDataModule):
-    def __init__(self, classification_word="Sentiment", val_split=0.1):
+    def __init__(self, classification_word="Sentiment", val_split=0.1, max_length=1024):
         self.classification_word = classification_word
         self.val_split = val_split
         self.train_dataset = None
         self.val_dataset = None
         self.test_dataset = None
         self.load_data()  # Load data upon initialization
+        self.max_length = max_length
 
     def load_data(self):
         dataset = load_dataset("imdb")
@@ -37,9 +38,20 @@ class IMDBDataModule(BaseDataModule):
         val_texts = [self.val_dataset[i]['text'] for i in range(len(self.val_dataset))]
         val_labels = [self.val_dataset[i]['label'] for i in range(len(self.val_dataset))]
 
-        train_encodings = tokenizer(train_texts, truncation=True, padding=True)
-        val_encodings = tokenizer(val_texts, truncation=True, padding=True)
-
+        # train_encodings = tokenizer(train_texts, truncation=True, padding=True)
+        train_encodings = tokenizer(
+            train_texts,
+            truncation=True,
+            padding='max_length',
+            max_length=self.max_length
+        )
+        # val_encodings = tokenizer(val_texts, truncation=True, padding=True)
+        val_encodings = tokenizer(
+            val_texts,
+            truncation=True,
+            padding='max_length',
+            max_length=self.max_length
+        )
         train_dataset = TensorDataset(
             torch.tensor(train_encodings['input_ids']),
             torch.tensor(train_encodings['attention_mask']),
@@ -59,8 +71,13 @@ class IMDBDataModule(BaseDataModule):
     def get_test_dataloader(self, tokenizer, batch_size):
         test_texts = self.test_dataset['text']
         test_labels = self.test_dataset['label']
-
-        test_encodings = tokenizer(test_texts, truncation=True, padding=True)
+        # test_encodings = tokenizer(test_texts, truncation=True)
+        test_encodings = tokenizer(
+            test_texts,
+            truncation=True,
+            padding='max_length',
+            max_length=self.max_length
+        )
 
         test_dataset = TensorDataset(
             torch.tensor(test_encodings['input_ids']),
@@ -78,7 +95,13 @@ class IMDBDataModule(BaseDataModule):
                             [self.val_dataset[i]['label'] for i in range(len(self.val_dataset))]
 
         # Tokenize the full training set
-        full_train_encodings = tokenizer(full_train_texts, truncation=True, padding=True)
+        # full_train_encodings = tokenizer(full_train_texts, truncation=True, padding=True)
+        full_train_encodings = tokenizer(
+            full_train_texts,
+            truncation=True,
+            padding='max_length',
+            max_length=self.max_length
+        )
 
         # Create a TensorDataset
         full_train_dataset = TensorDataset(

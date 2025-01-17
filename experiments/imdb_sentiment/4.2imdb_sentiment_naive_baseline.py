@@ -6,7 +6,7 @@ import csv
 from datetime import datetime
 
 # Set CUDA DEVICE (optional)
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
@@ -44,6 +44,12 @@ def run_imdb_sentiment_experiment():
         # "modern_bert",
         # "deberta",
     ]
+    models = [
+        # "albert_xxlarge",
+        # "roberta_large",
+        # "deberta_large",
+        "electra_large"
+    ]
 
     # Classification setup
     classification_word = "Sentiment"
@@ -51,8 +57,8 @@ def run_imdb_sentiment_experiment():
     num_epochs = 20
     test_interval = 4   # Validate every 4 epochs
     base_lr = 5e-4
-    batch_size = 4
-
+    batch_size = 8
+    max_length = 1024
     # Common training params for ALL models
     base_training_params = {
         "layer_wise_lr_decay": 0.95,
@@ -65,8 +71,6 @@ def run_imdb_sentiment_experiment():
         "num_epochs_eval": test_interval,
     }
 
-    # Build data module
-    data_module = IMDBDataModule(classification_word)
 
     # Prepare output CSV
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -97,8 +101,13 @@ def run_imdb_sentiment_experiment():
             # Create model with 2 hidden layers, freeze_encoder=False
             model = model_variations[model_name][hidden_layer](
                 classification_word,
-                freeze_encoder=False
+                freeze_encoder=False,
+                max_length=max_length
             )
+            
+            # Build data module
+            data_module = IMDBDataModule(classification_word, max_length=model.max_length)
+
 
             # Build optimizer settings
             optimizer_name = "adamw"

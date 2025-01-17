@@ -11,9 +11,9 @@ def get_device():
     print(f"Using device: {device}")
     return device
 
-def create_custom_model(model_name, classification_word, hidden_layers, freeze_encoder=True, cuda_device=0):
+def create_custom_model(model_name, classification_word, hidden_layers, freeze_encoder=True, cuda_device=0, max_length=1024):
     device = get_device()
-    return create_model(model_name, classification_word, hidden_layers, device, freeze_encoder)
+    return create_model(model_name, classification_word, hidden_layers, device, freeze_encoder,max_length)
 
 def create_custom_t5_model(model_name, classification_word, hidden_layers, freeze_encoder=True, cuda_device=0):
     try:
@@ -69,11 +69,12 @@ def create_model_variations() -> Dict[str, Dict[str, Callable]]:
         "distilroberta": "distilroberta-base",
         "modern_bert": "answerdotai/ModernBERT-base",
         "xlnet": "xlnet-large-cased",  # Updated to large
-        "deberta": "microsoft/deberta-v3-large",
+        "deberta_large": "microsoft/deberta-v3-large",
         "roberta_large": "roberta-large",
         "albert_xxlarge": "albert-xxlarge-v2",
         "electra_large": "google/electra-large-discriminator",
         "xlm_roberta": "xlm-roberta-large",
+        "electra_large": "google/electra-large-discriminator",
     }
     
     # Get standard hidden layer configurations
@@ -85,12 +86,13 @@ def create_model_variations() -> Dict[str, Dict[str, Callable]]:
     for model_name, model_path in base_models.items():
         variations[model_name] = {}
         for config_name, hidden_layers in hidden_configs.items():
-            def create_model_fn(cw, model_path=model_path, hidden_layers=hidden_layers,freeze_encoder=True):
+            def create_model_fn(cw, model_path=model_path, hidden_layers=hidden_layers,freeze_encoder=True,max_length=1024):
                 return create_custom_model(
                     model_name=model_path,
                     classification_word=cw,
                     hidden_layers=hidden_layers,
-                    freeze_encoder=freeze_encoder
+                    freeze_encoder=freeze_encoder,
+                    max_length=max_length
                 )
             variations[model_name][config_name] = create_model_fn
     return variations
