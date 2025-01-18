@@ -6,7 +6,7 @@ import csv
 from datetime import datetime
 
 # Set CUDA DEVICE (optional)
-os.environ["CUDA_VISIBLE_DEVICES"] = "3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 # Add project root to system path
 project_root = Path(__file__).resolve().parent
@@ -39,9 +39,9 @@ def run_imdb_sentiment_experiment():
         # "bert",
         # "distilbert",
         # "roberta",
-        "roberta_large"
-        # "electra_small_discriminator",
-        # "modern_bert",
+        # "roberta_large"
+        "electra_small_discriminator",
+        "modern_bert",
         # "deberta",
     ]
     models = [
