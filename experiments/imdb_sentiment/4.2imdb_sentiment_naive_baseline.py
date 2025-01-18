@@ -35,21 +35,14 @@ def run_imdb_sentiment_experiment():
 
     # List of models to run
     models = [
-        # "albert",
-        # "bert",
-        # "distilbert",
-        # "roberta",
-        # "roberta_large"
-        "electra_small_discriminator",
-        "modern_bert",
-        # "deberta",
+        "albert",
+        "albert_xxlarge",
+        "bert",
+        "roberta",
+        "roberta_large"
+        "electra_large",
     ]
-    models = [
-        # "albert_xxlarge",
-        # "roberta_large",
-        # "deberta_large",
-        "electra_large"
-    ]
+
 
     # Classification setup
     classification_word = "Sentiment"
@@ -128,6 +121,8 @@ def run_imdb_sentiment_experiment():
                 num_epochs=num_epochs,
                 device=device,
                 dataset_name="imdb_naive_baseline",
+                csv_writer=writer,
+                csv_file=csvfile,
                 **base_training_params
             )
 
@@ -158,7 +153,7 @@ def run_imdb_sentiment_experiment():
             # Write a "final test" row
             row_dict = {
                 'model': model_name,
-                'epoch': f"final_test",
+                'epoch': f"naive_baseline",
                 'train_loss': None,
                 'val_loss': None,
                 'test_loss': test_loss,

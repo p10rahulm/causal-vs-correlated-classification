@@ -15,29 +15,6 @@ def create_custom_model(model_name, classification_word, hidden_layers, freeze_e
     device = get_device()
     return create_model(model_name, classification_word, hidden_layers, device, freeze_encoder,max_length)
 
-def create_custom_t5_model(model_name, classification_word, hidden_layers, freeze_encoder=True, cuda_device=0):
-    try:
-        device = get_device(cuda_device)
-        t5_encoder = T5EncoderModel.from_pretrained(model_name)
-        tokenizer = T5Tokenizer.from_pretrained(model_name)
-
-        model = T5ForClassification(
-            t5_encoder,
-            hidden_layers=hidden_layers,
-            tokenizer=tokenizer,
-            classification_word=classification_word
-        )
-
-        if freeze_encoder:
-            model.freeze_encoder()
-
-        return model.to(device)
-
-    except ImportError as e:
-        print(f"Error creating T5 model: {e}")
-        print("Please install SentencePiece by running: pip install sentencepiece")
-        return None
-
 def create_model_factory(model_path: str, cuda_device: int = 0) -> Callable:
     """Creates a partial function for model creation with a specific model path and device."""
     return partial(create_custom_model, model_path, cuda_device=cuda_device)

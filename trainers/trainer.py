@@ -41,21 +41,23 @@ class Trainer:
         self,
         model,
         data_module,
-        optimizer_name='adam',
+        optimizer_name='adamw',
         dataset_name='imdb',
         optimizer_params=None,
         batch_size=16,
         num_epochs=20,
         device=None,
         patience=3,
-        layer_wise_lr_decay=0.95,  # New parameter
-        max_grad_norm=5.0,         # New parameter
-        warmup_ratio=0.1,          # New parameter
-        cosine_decay=True,         # New parameter
+        layer_wise_lr_decay=0.95,  
+        max_grad_norm=5.0,         
+        warmup_ratio=0.1,          
+        cosine_decay=True,         
         drop_lr_on_plateau=False,   # Modified default
         num_epochs_eval = 4,
         lr_schedule='cyclic_triangular',        # e.g. 'none', 'cyclic_triangular', 'one_cycle', ...
         cycle_length_epochs=4,    # For cyclical schedules
+        csv_file = None,
+        csv_writer = None
     ):
         # Existing initialization code remains the same
         self.model = model
@@ -84,7 +86,7 @@ class Trainer:
         self.dataset_name = dataset_name
         self.num_hidden_layers = self.model.num_hidden_layers
 
-        # New parameters
+        s
         self.layer_wise_lr_decay = layer_wise_lr_decay
         self.max_grad_norm = max_grad_norm
         
@@ -138,6 +140,9 @@ class Trainer:
         self.loss_fn = nn.CrossEntropyLoss()
         self.val_loader = None
 
+        # CSV FILE
+        self.csv_file = csv_file,
+        self.csv_writer = csv_writer
         # Set up logging
         logging.basicConfig(level=logging.INFO)
         self.logger = logging.getLogger(__name__)
@@ -414,6 +419,7 @@ class Trainer:
                 self.scheduler.step(val_loss)
 
             epoch_stats = {
+                'model': self.model_name,
                 'epoch': epoch + 1,
                 'train_loss': train_loss,
                 'val_loss': val_loss,
@@ -422,6 +428,8 @@ class Trainer:
                 'recall': recall,
                 'f1': f1
             }
+            self.csv_writer(epoch_stats)
+            self.csv_file.flush()
             training_history.append(epoch_stats)
 
             self.logger.info(f"Train loss: {train_loss:.4f}, Val loss: {val_loss:.4f}")
@@ -536,6 +544,7 @@ class Trainer:
 
             # 5) Store epoch stats in a dictionary
             epoch_stats = {
+                'model': self.model_name,
                 "epoch": epoch + 1,
                 "train_loss": avg_train_loss,
                 "val_loss": val_loss,
@@ -544,6 +553,8 @@ class Trainer:
                 "recall": recall,
                 "f1": f1
             }
+            self.csv_writer(epoch_stats)
+            self.csv_file.flush()
             training_history.append(epoch_stats)
 
         return training_history
