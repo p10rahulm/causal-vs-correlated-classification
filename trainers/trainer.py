@@ -57,7 +57,8 @@ class Trainer:
         lr_schedule='cyclic_triangular',        # e.g. 'none', 'cyclic_triangular', 'one_cycle', ...
         cycle_length_epochs=4,    # For cyclical schedules
         csv_file = None,
-        csv_writer = None
+        csv_writer = None,
+        gradient_accumulation_steps=1
     ):
         # Existing initialization code remains the same
         self.model = model
@@ -70,6 +71,7 @@ class Trainer:
         self.num_epochs_eval = num_epochs_eval
         self.lr_schedule = lr_schedule
         self.cycle_length_epochs = cycle_length_epochs
+        self.gradient_accumulation_steps = gradient_accumulation_steps
         
         # Validation checks
         if not hasattr(model, 'classification_word'):
@@ -86,7 +88,7 @@ class Trainer:
         self.dataset_name = dataset_name
         self.num_hidden_layers = self.model.num_hidden_layers
 
-        s
+        
         self.layer_wise_lr_decay = layer_wise_lr_decay
         self.max_grad_norm = max_grad_norm
         
@@ -129,7 +131,7 @@ class Trainer:
         # Set up scheduler with warmup and cosine decay
 
         steps_per_epoch = len(self.train_loader)
-        total_training_steps = steps_per_epoch * self.num_epochs
+        self.total_training_steps = steps_per_epoch * self.num_epochs
         
         self.scheduler = self._setup_scheduler(
             optimizer=self.optimizer,
@@ -141,7 +143,7 @@ class Trainer:
         self.val_loader = None
 
         # CSV FILE
-        self.csv_file = csv_file,
+        self.csv_file = csv_file
         self.csv_writer = csv_writer
         # Set up logging
         logging.basicConfig(level=logging.INFO)
@@ -332,7 +334,7 @@ class Trainer:
         running_loss = 0
         batch_count = 0
 
-        for batch in progress_bar:
+        for step, batch in enumerate(progress_bar):
             if isinstance(batch, dict):
                 input_ids = batch['input_ids'].to(self.device)
                 attention_mask = batch['attention_mask'].to(self.device)
@@ -340,25 +342,31 @@ class Trainer:
             else:
                 input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
                 
-            self.optimizer.zero_grad()
+
             outputs = self.model(input_ids, attention_mask)
-            loss = self.loss_fn(outputs, labels)
+            # 'raw_loss' is the unscaled, "real" loss for logging
+            raw_loss = self.loss_fn(outputs, labels)
+            # scale the loss for gradient accumulation
+            loss = raw_loss / self.gradient_accumulation_steps
             loss.backward()
-            
-            # Add gradient clipping
-            clip_grad_norm_(self.model.parameters(), max_norm=self.max_grad_norm)
-            
-            self.optimizer.step()
-         
-            # ----- SCHEDULER STEP PER BATCH -----
-            # Step LR if using a non-Plateau scheduler
-            if self.scheduler is not None and not isinstance(self.scheduler, ReduceLROnPlateau):
-                self.scheduler.step()
-                
-            total_loss += loss.item()
-            # Update running averages
+
+            total_loss += raw_loss.item()
             batch_count += 1
-            running_loss = (running_loss * (batch_count - 1) + loss.item()) / batch_count
+
+            # Gradient accumulation: perform step if we've reached accumulation threshold
+            # Perform the optimizer step if we've reached the accumulation threshold
+            if ((step + 1) % self.gradient_accumulation_steps == 0) or ((step + 1) == len(progress_bar)):
+                # Clip
+                clip_grad_norm_(self.model.parameters(), max_norm=self.max_grad_norm)
+                # Update
+                self.optimizer.step()
+                self.optimizer.zero_grad()
+
+                # Scheduler step (if not on Plateau)
+                if self.scheduler is not None and not isinstance(self.scheduler, ReduceLROnPlateau):
+                    self.scheduler.step()
+                
+            running_loss = (running_loss * (batch_count - 1) + raw_loss.item()) / batch_count
             
             
             # Only update progress bar description when tqdm updates
@@ -489,9 +497,13 @@ class Trainer:
 
             batch_count = 0
             running_loss = 0.0
-
+            # Zero grads at the start
+            self.optimizer.zero_grad()
+            
             # 3) Train loop across the "full" train loader
-            for batch in progress_bar:
+            for step, batch in enumerate(progress_bar):
+                self.optimizer.zero_grad()
+
                 if isinstance(batch, dict):
                     input_ids = batch['input_ids'].to(self.device)
                     attention_mask = batch['attention_mask'].to(self.device)
@@ -499,22 +511,26 @@ class Trainer:
                 else:
                     input_ids, attention_mask, labels = [b.to(self.device) for b in batch]
 
-                self.optimizer.zero_grad()
                 outputs = self.model(input_ids, attention_mask)
-                loss = self.loss_fn(outputs, labels)
+                raw_loss = self.loss_fn(outputs, labels)
+                total_loss += raw_loss.item()
+
+                # Scale loss for gradient accumulation
+                loss = raw_loss / self.gradient_accumulation_steps
                 loss.backward()
 
-                # Gradient clipping
-                clip_grad_norm_(self.model.parameters(), max_norm=self.max_grad_norm)
-                self.optimizer.step()
-
-                # Step scheduler if not ReduceLROnPlateau (e.g. Cyclic, OneCycle, etc.)
-                if self.scheduler is not None and not isinstance(self.scheduler, ReduceLROnPlateau):
-                    self.scheduler.step()
-
-                total_loss += loss.item()
                 batch_count += 1
-                running_loss = (running_loss * (batch_count - 1) + loss.item()) / batch_count
+                running_loss = (running_loss * (batch_count - 1) + raw_loss.item()) / batch_count
+
+                # Perform optimizer step after accumulation_steps or at the end
+                if ((step + 1) % self.gradient_accumulation_steps == 0) or ((step + 1) == len(progress_bar)):
+                    clip_grad_norm_(self.model.parameters(), max_norm=self.max_grad_norm)
+                    self.optimizer.step()
+                    self.optimizer.zero_grad()
+
+                    # Scheduler step (if not ReduceLROnPlateau)
+                    if self.scheduler is not None and not isinstance(self.scheduler, ReduceLROnPlateau):
+                        self.scheduler.step()
 
                 # Update progress bar with running loss / LR
                 if batch_count % max(len(full_train_loader) // 20, 1) == 0:

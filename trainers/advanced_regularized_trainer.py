@@ -72,6 +72,9 @@ class RegularizedTrainer(Trainer):
         max_grad_norm: float = 5.0,
         classification_word="Sentiment",
         model_name="albert",
+        csv_file = None,
+        csv_writer = None,
+        gradient_accumulation_steps=1,
         **kwargs
     ):
         """
@@ -149,6 +152,7 @@ class RegularizedTrainer(Trainer):
         self.lr_schedule = lr_schedule
         self.warmup_ratio = warmup_ratio
         self.cycle_length_epochs = cycle_length_epochs
+        self.gradient_accumulation_steps = gradient_accumulation_steps
         self._setup_scheduler()
 
         # --- Lambda schedule setup ---
@@ -168,7 +172,9 @@ class RegularizedTrainer(Trainer):
         # We'll store the current lambda each step.
         self.current_lambda = lambda_start
 
-        
+        # CSV FILE
+        self.csv_file = csv_file
+        self.csv_writer = csv_writer
         # Loss function for classification
         self.cls_loss_fn = nn.CrossEntropyLoss()
 
@@ -454,6 +460,12 @@ class RegularizedTrainer(Trainer):
                     "recall": val_rec,
                     "f1": val_f1
                 })
+            
+            if self.csv_writer is not None:
+                self.csv_writer(metrics)
+                if self.csv_file is not None:
+                    self.csv_file.flush()
+
             history.append(metrics)
 
         return history
@@ -488,6 +500,10 @@ class RegularizedTrainer(Trainer):
                     "recall": val_rec,
                     "f1": val_f1
                 })
+            if self.csv_writer is not None:
+                self.csv_writer(metrics)
+                if self.csv_file is not None:
+                    self.csv_file.flush()
             history.append(metrics)
 
         return history
@@ -520,14 +536,12 @@ class RegularizedTrainer(Trainer):
             smoothing=0,  # Disable smoothing
             leave=False
         )
+        self.optimizer.zero_grad()
 
         for batch_idx, batch in enumerate(progress_bar):
             # 0) Possibly compute a "global_step" if you have a lambda schedule
             global_step = epoch_idx * len(loader) + batch_idx
             current_lambda = self._get_current_lambda(epoch_idx=epoch_idx,global_step=global_step)
-
-            # 1) Zero out grads
-            self.optimizer.zero_grad()
 
             # 2) Forward pass (policy model)
             full_ids = batch["full_input_ids"].to(self.device)
@@ -564,18 +578,26 @@ class RegularizedTrainer(Trainer):
             )
 
             # 6) Combine losses
-            loss = cls_loss + current_lambda * expse_penalty
-            loss.backward()
-            clip_grad_norm_(self.model_theta.parameters(), max_norm=self.max_grad_norm)
-            self.optimizer.step()
+            raw_loss = cls_loss + current_lambda * expse_penalty
+            
+            # scale the loss for gradient accumulation:
+            scaled_loss = raw_loss / self.gradient_accumulation_steps
+            scaled_loss.backward()
+            
+            # Perform optimizer step only every gradient_accumulation_steps
+            # or for the last leftover batch
+            if ((batch_idx + 1) % self.gradient_accumulation_steps == 0) or ((batch_idx + 1) == len(loader)):
+                clip_grad_norm_(self.model_theta.parameters(), max_norm=self.max_grad_norm)
+                self.optimizer.step()
+                self.optimizer.zero_grad()
 
-            # If scheduler is not ReduceLROnPlateau, step each iteration
-            if (self.scheduler is not None) and (not isinstance(self.scheduler, ReduceLROnPlateau)):
-                self.scheduler.step()
+                # Step the scheduler if not Plateau
+                if self.scheduler is not None and not isinstance(self.scheduler, ReduceLROnPlateau):
+                    self.scheduler.step()
 
-            total_loss += loss.item()
+            total_loss += scaled_loss.item()
             total_steps += 1
-            running_loss = (running_loss * (total_steps - 1) + loss.item()) / total_steps
+            running_loss = (running_loss * (total_steps - 1) + scaled_loss.item()) / total_steps
 
             # For training metrics, collect predictions
             preds = torch.argmax(logits_theta, dim=1)
