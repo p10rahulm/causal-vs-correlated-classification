@@ -35,12 +35,12 @@ def run_imdb_sentiment_experiment():
 
     # List of models to run
     models = [
-        # "albert",
-        # "bert",
+        "albert",
+        "bert",
         "roberta",
-        # "albert_xxlarge",
-        # "electra_large",
-        # "roberta_large"
+        "albert_xxlarge",
+        "electra_large",
+        "roberta_large"
     ]
 
 
