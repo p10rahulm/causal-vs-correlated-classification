@@ -160,6 +160,7 @@ def run_causal_mediation_gridsearch():
                             csv_writer=writer,
                             csv_file=csvfile,
                             gradient_accumulation_steps=gradient_accumulation_steps,
+                            model_name=model_name,
                         )
 
                         # Train (optionally on full dataset or partial)

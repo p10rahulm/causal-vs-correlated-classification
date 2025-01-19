@@ -35,12 +35,12 @@ def run_imdb_sentiment_experiment():
 
     # List of models to run
     models = [
-        "albert",
-        "albert_xxlarge",
-        "bert",
+        # "albert",
+        # "bert",
         "roberta",
-        "roberta_large"
-        "electra_large",
+        # "albert_xxlarge",
+        # "electra_large",
+        # "roberta_large"
     ]
 
 
@@ -50,8 +50,8 @@ def run_imdb_sentiment_experiment():
     num_epochs = 20
     test_interval = 4   # Validate every 4 epochs
     base_lr = 5e-4
-    batch_size = 8
-    max_length = 512
+    batch_size = 16
+    max_length = 1024
     gradient_accumulation_steps=4
     # Common training params for ALL models
     base_training_params = {
@@ -68,7 +68,7 @@ def run_imdb_sentiment_experiment():
 
     # Prepare output CSV
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = "outputs/imdb_sentiment_classifier_naive_baseline"
+    results_dir = "outputs/imdb_sentiment_classifier_sft"
     os.makedirs(results_dir, exist_ok=True)
     results_file = os.path.join(results_dir, f"results_{timestamp}.csv")
 
@@ -100,7 +100,7 @@ def run_imdb_sentiment_experiment():
             )
             
             # Build data module
-            data_module = IMDBDataModule(classification_word, max_length=model.max_length)
+            data_module = IMDBDataModule(classification_word, max_length=model.max_length) if max_length is not None else IMDBDataModule(classification_word, max_length=None)
 
 
             # Build optimizer settings
@@ -121,10 +121,11 @@ def run_imdb_sentiment_experiment():
                 batch_size=batch_size,
                 num_epochs=num_epochs,
                 device=device,
-                dataset_name="imdb_naive_baseline",
+                dataset_name="imdb_sft",
                 csv_writer=writer,
                 csv_file=csvfile,
                 gradient_accumulation_steps=gradient_accumulation_steps,
+                model_name=model_name,
                 **base_training_params
             )
 

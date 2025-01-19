@@ -51,7 +51,6 @@ def create_model_variations() -> Dict[str, Dict[str, Callable]]:
         "albert_xxlarge": "albert-xxlarge-v2",
         "electra_large": "google/electra-large-discriminator",
         "xlm_roberta": "xlm-roberta-large",
-        "electra_large": "google/electra-large-discriminator",
     }
     
     # Get standard hidden layer configurations

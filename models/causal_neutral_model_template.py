@@ -8,24 +8,27 @@ class CausalNeutralClassifier(nn.Module):
         self.model_name = model_name
         self.classification_word = classification_word
         # Get original config to check max position embeddings
-        original_config = AutoConfig.from_pretrained(model_name)
-        original_max_length = original_config.max_position_embeddings
-        
-        # If original length is smaller than desired, keep original
-        self.max_length = min(original_max_length, max_length)
-        
         self.config = AutoConfig.from_pretrained(model_name)
-        self.config.max_position_embeddings = self.max_length
-        self.config.max_length = self.max_length
-        self.encoder = AutoModel.from_pretrained(model_name, config=self.config)
-        # self.tokenizer = AutoTokenizer.from_pretrained(model_name)
-        # Initialize tokenizer with max length
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            model_name,
-            model_max_length=self.max_length,
-            padding_side='right',  # Ensure consistent padding
-            truncation_side='right'  # Truncate from the right side
-        )
+        if max_length is not None:
+            original_max_length = self.config.max_position_embeddings
+            # If original length is smaller than desired, keep original
+            self.max_length = min(original_max_length, max_length)
+            
+            self.config.max_position_embeddings = self.max_length
+            self.config.max_length = self.max_length
+            self.encoder = AutoModel.from_pretrained(model_name, config=self.config)
+            # self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+            # Initialize tokenizer with max length
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                model_name,
+                model_max_length=self.max_length,
+                padding_side='right',  # Ensure consistent padding
+                truncation_side='right'  # Truncate from the right side
+            )
+        else:
+            self.encoder = AutoModel.from_pretrained(model_name, config=self.config)
+            self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+
         self.num_hidden_layers = len(hidden_layers)
         self.dropout = nn.Dropout(dropout_rate)
 

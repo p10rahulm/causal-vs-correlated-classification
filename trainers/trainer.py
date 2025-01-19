@@ -58,7 +58,8 @@ class Trainer:
         cycle_length_epochs=4,    # For cyclical schedules
         csv_file = None,
         csv_writer = None,
-        gradient_accumulation_steps=1
+        gradient_accumulation_steps=1,
+        model_name="albert",
     ):
         # Existing initialization code remains the same
         self.model = model
@@ -83,7 +84,7 @@ class Trainer:
         if not hasattr(data_module, 'get_full_train_dataloader'):
             raise AttributeError("data_module must have 'get_full_train_dataloader' method")
         
-        self.model_name = type(model).__name__
+        self.model_name = model_name
         self.classification_word = model.classification_word
         self.dataset_name = dataset_name
         self.num_hidden_layers = self.model.num_hidden_layers
@@ -431,12 +432,12 @@ class Trainer:
                 'epoch': epoch + 1,
                 'train_loss': train_loss,
                 'val_loss': val_loss,
-                'accuracy': accuracy,
-                'precision': precision,
-                'recall': recall,
-                'f1': f1
+                "test_accuracy": accuracy,
+                "test_precision": precision,
+                "test_recall": recall,
+                "test_f1": f1
             }
-            self.csv_writer(epoch_stats)
+            self.csv_writer.writerow(epoch_stats)
             self.csv_file.flush()
             training_history.append(epoch_stats)
 
@@ -564,12 +565,12 @@ class Trainer:
                 "epoch": epoch + 1,
                 "train_loss": avg_train_loss,
                 "val_loss": val_loss,
-                "accuracy": accuracy,
-                "precision": precision,
-                "recall": recall,
-                "f1": f1
+                "test_accuracy": accuracy,
+                "test_precision": precision,
+                "test_recall": recall,
+                "test_f1": f1
             }
-            self.csv_writer(epoch_stats)
+            self.csv_writer.writerow(epoch_stats)
             self.csv_file.flush()
             training_history.append(epoch_stats)
 
