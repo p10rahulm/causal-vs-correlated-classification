@@ -1,0 +1,5 @@
+Attempt 4: Error decoding JSON: Expecting ',' delimiter: line 3 column 115 (char 167)
+Response text: {
+  "offensive_phrases": ["deservedly", "got shot"],
+  "neutral_phrases": ["@USER", "she", "said", "her supporting gun", "control is", "more legitimate", "because", """, "she has", "more life experience", "with", "it", """, "she knew", "people", "who", "by", "Dorner"]
+}

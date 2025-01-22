@@ -1,0 +1,46 @@
+Attempt 4: Error decoding JSON: Expecting ',' delimiter: line 24 column 8 (char 355)
+Response text: {
+  "offensive_phrases": [
+    "wild outlandish shit"
+  ],
+  "neutral_phrases": [
+    "@USER @USER @USER",
+    "@USER",
+    "And",
+    "you",
+    "say",
+    "liberals make",
+    "false promises",
+    "How",
+    "'s that",
+    "wall",
+    "coming",
+    "How",
+    "'s that",
+    "denuclearization of",
+    "NK",
+    "coming",
+    "How",
+    "that",
+    "" tax",
+    "break",
+    """,
+    "working",
+    "out",
+    "for",
+    "you",
+    "Nice ole",
+    "tariffs",
+    "we got",
+    "there",
+    "huh",
+    "But",
+    "yea",
+    "keep",
+    "on",
+    "saying",
+    "to make",
+    "you feel",
+    "better"
+  ]
+}

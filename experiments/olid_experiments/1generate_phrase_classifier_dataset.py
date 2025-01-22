@@ -1,6 +1,3 @@
-# For the jigsaw_toxicity dataset, simply add the argument `--dataset jigsaw_toxicity'
-# This dataset with 1000 instances is present in the file: outputs/jigsaw_toxicity_phrase_dataset/jigsaw_toxicity_toxic_phrases_20250109_121612.json
-
 import os
 import sys
 from pathlib import Path
@@ -18,6 +15,8 @@ from utilities.general_utilities import get_claude_response, save_results, set_s
 import json
 import textwrap
 from data_loaders.imdb import get_imdb_train_samples
+import posixpath
+
 from utilities.phrase_extraction import remove_punctuation_phrases, extract_phrases
 import pandas as pd
 import re
@@ -67,7 +66,7 @@ DATASET_CONFIGS = {
     'jigsaw_toxicity': DatasetConfig(
         name='jigsaw_toxicity',
         classification_word='toxic',
-        file_path=Path('../../data/toxicity_data/train.csv'),
+        file_path=Path('data/toxicity_data/train.csv'),
         input_column='comment_text',
         label_column='toxic',
         sample_size=1000
@@ -102,9 +101,8 @@ def clean_text(text: str) -> str:
 
 def read_examples_from_file(classification_word: str) -> str:
     """Read example templates from file with proper error handling."""
-    template_dir = Path("../../prompt_templates/wz_classification")
-    file_path = template_dir / f"{classification_word.lower()}.txt"
-    
+    template_dir = Path("prompt_templates/wz_classification")
+    file_path = Path(posixpath.join(project_root, template_dir / f"{classification_word.lower()}.txt"))
     try:
         return file_path.read_text().strip()
     except FileNotFoundError:
@@ -177,6 +175,7 @@ def process_texts(
                 continue
                 
             analysis = classify_phrases(extracted_phrases, clean_text_str, classification_word, dataset)
+            
             if analysis:
                 result = {
                     'text': clean_text_str,
@@ -229,7 +228,7 @@ def load_dataset_samples(config: DatasetConfig, random_seed: int = 42) -> Tuple[
         dataset = load_dataset("lmsys/toxic-chat", split='train')
         df = pd.DataFrame(dataset)
     else:
-        df = pd.read_csv(config.file_path, sep='\t' if config.name == 'olid' else ',')
+        df = pd.read_csv(posixpath.join(project_root,config.file_path), sep='\t' if config.name == 'olid' else ',')
     
     # Sample data
     df = df.sample(n=config.sample_size, random_state=random_seed)
@@ -248,7 +247,6 @@ def main() -> None:
     """Main execution function."""
     args = parse_args()
     set_seed(42)
-
     # Get dataset configuration
     config = DATASET_CONFIGS[args.dataset]
     if args.sample_size:
@@ -256,7 +254,7 @@ def main() -> None:
     
     # Create output directory with timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_dir = Path('../../outputs') / f"{config.name}_phrase_dataset"
+    output_dir = Path('outputs') / f"{config.name}_phrase_dataset"
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
     except Exception as e:
@@ -268,6 +266,7 @@ def main() -> None:
         texts, labels = load_dataset_samples(config)
         
         output_file = output_dir / f"{config.name}_{config.classification_word.lower()}_phrases_{timestamp}.json"
+        
         process_texts(
             texts,
             labels,
@@ -275,6 +274,7 @@ def main() -> None:
             output_file=output_file,
             dataset=config.name
         )
+        
         logger.info(
             f"Processed {len(texts)} texts and saved results to {output_file}"
         )

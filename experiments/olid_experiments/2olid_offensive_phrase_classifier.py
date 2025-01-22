@@ -54,24 +54,23 @@ def get_hyperparameters(model_name, hyperparams):
             'learning_rate': get_model_specific_lr(model_name)  # Use model-specific LR even for fallback
         }
 
-def run_imdb_sentiment_experiment():
+def run_olid_sentiment_experiment():
     # Experiment parameters
     models = ["deberta", "electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "modern_bert"]
-    classification_word = "Sentiment"
+    classification_word = "Offensive"
     epochs = [10, 20, 30, 40]
     batch_size = 16
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load hyperparameters
-    hyperparams = load_hyperparameters('models/optimal_wz_classifier_validation_hyperparams.json')
+    hyperparams = load_hyperparameters('../../models/optimal_wz_classifier_validation_hyperparams.json')
 
 
     # Prepare data loader
-    # file_path = "outputs/imdb_train_sentiment_analysis.json"  # Update this path if necessary
-    file_path = "outputs/imdb_phrase_dataset/imdb_sentiment_phrases_20250107_121028.json"
+    file_path = "outputs/olid_phrase_dataset/olid_offensive_phrases_20250122_145455.json"
     data_module = CausalNeutralDataModule(file_path, classification_word)
 
-        # Training parameters for the new trainer
+    # Training parameters for the new trainer
     training_params = {
         'layer_wise_lr_decay': 0.95,
         'max_grad_norm': 5.0,
@@ -93,7 +92,7 @@ def run_imdb_sentiment_experiment():
 
     # Prepare results file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = "outputs/imdb_phrase_classification"
+    results_dir = "outputs/olid_phrase_classification"
     os.makedirs(results_dir, exist_ok=True)
     results_file = os.path.join(results_dir, f"wz_training_results_{timestamp}.csv")
 
@@ -143,7 +142,7 @@ def run_imdb_sentiment_experiment():
                     batch_size=batch_size,
                     num_epochs=num_epochs,
                     device=device,
-                    dataset_name="imdb_sentiment",
+                    dataset_name="olid",
                     **training_params
                 )
 
@@ -164,10 +163,10 @@ def run_imdb_sentiment_experiment():
                 csvfile.flush()  # Ensure data is written immediately
 
                 # Save the trained model
-                save_trained_model(trainer, f"imdb_sentiment_wz_{model_name}_{num_epochs}epochs",
+                save_trained_model(trainer, f"olid_offensive_wz_{model_name}_{num_epochs}epochs",
                                 int(hidden_layer[0]))
 
         print(f"Experiments completed. Results saved to {results_file}")
 
 if __name__ == "__main__":
-    run_imdb_sentiment_experiment()
+    run_olid_sentiment_experiment()

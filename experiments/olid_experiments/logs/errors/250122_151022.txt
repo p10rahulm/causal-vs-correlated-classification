@@ -1,0 +1,44 @@
+Attempt 3: Error decoding JSON: Expecting ',' delimiter: line 6 column 8 (char 93)
+Response text: {
+  "offensive_phrases": [
+    "some weird invitation",
+    "to find",
+    "his old",
+    "" deadname"",
+    "he feels",
+    "the need",
+    "to prove",
+    "that",
+    "he is",
+    "trans",
+    "ppl",
+    "did",
+    "n't",
+    "care",
+    "about",
+    "it",
+    "enough",
+    "😒"
+  ],
+  "neutral_phrases": [
+    "@USER",
+    "Is",
+    "that",
+    "for",
+    "a treasure hunt",
+    "where the",
+    "goal is",
+    "Is",
+    "it",
+    "because",
+    "Or",
+    "because",
+    "Either",
+    "way",
+    "I",
+    "'m",
+    "not",
+    "going",
+    "to join"
+  ]
+}

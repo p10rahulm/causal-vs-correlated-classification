@@ -1,0 +1,40 @@
+Attempt 1: Error decoding JSON: Expecting ',' delimiter: line 36 column 7 (char 487)
+Response text: {
+  "offensive_phrases": [
+    "stupid",
+    "dumb and",
+    "easily persuaded",
+    "shit",
+    "every white",
+    "redneck",
+    "YEAH",
+    "MAGA",
+    "BABY"
+  ],
+  "neutral_phrases": [
+    "Honestly",
+    "we all",
+    "know",
+    "he 's",
+    "but",
+    "what",
+    "is",
+    "actually surprising",
+    "is",
+    "how",
+    "the people",
+    "of",
+    "our country",
+    "are",
+    "..",
+    "he",
+    "'ll",
+    "say",
+    "like",
+    "this",
+    "and",
+    "is screaming",
+    """,
+    "" URL"
+  ]
+}

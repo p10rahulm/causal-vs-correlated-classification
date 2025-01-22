@@ -1,11 +1,21 @@
-from datasets import load_dataset
+# from datasets import load_dataset
 import torch
 from torch.utils.data import DataLoader, TensorDataset, random_split
 from data_loaders.common.base_data_module import BaseDataModule
+import pandas as pd
+import posixpath
+import sys
+from pathlib import Path
+from sklearn.model_selection import train_test_split
+import numpy as np
 
+project_root = Path(__file__).resolve().parent
+while not (project_root / '.git').exists() and project_root != project_root.parent:
+    project_root = project_root.parent
+sys.path.insert(0, str(project_root))
 
-class IMDBDataModule(BaseDataModule):
-    def __init__(self, classification_word="Sentiment", val_split=0.1):
+class OLIDDataModule(BaseDataModule):
+    def __init__(self, classification_word="Offensive", val_split=0.1):
         self.classification_word = classification_word
         self.val_split = val_split
         self.train_dataset = None
@@ -14,11 +24,10 @@ class IMDBDataModule(BaseDataModule):
         self.load_data()  # Load data upon initialization
 
     def load_data(self):
-        dataset = load_dataset("imdb")
-        self.test_dataset = dataset['test']
-
-        # Split the original training set into train and validation
-        train_val = dataset['train']
+        olid = pd.read_csv(posixpath.join(project_root, 'data/olid_data/olid-training-v1.0.tsv'), sep='\t')
+        X_train, X_test, y_train, y_test = train_test_split(olid["tweet"], olid["subtask_a"], test_size=0.33, random_state=42)    
+        self.test_dataset = pd.concat([X_test, y_test], axis=1)
+        train_val =  pd.concat([X_train, y_train], axis=1)
         val_size = int(len(train_val) * self.val_split)
         train_size = len(train_val) - val_size
         self.train_dataset, self.val_dataset = random_split(train_val, [train_size, val_size])

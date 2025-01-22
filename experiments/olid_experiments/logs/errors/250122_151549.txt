@@ -1,0 +1,16 @@
+Attempt 4: Error decoding JSON: Expecting ',' delimiter: line 11 column 31 (char 328)
+Response text: {
+  "offensive_phrases": [
+    "Dana may be kind of woman who doesn't want to help other woman;wants to be THE prima donna",
+    "doesn't care about developing next-gen girls",
+    "isn't bothered by school shootings",
+    "must not like kids"
+  ],
+  "neutral_phrases": [
+    "@USER",
+    "@USER",
+    "Don't usually do Twitter"conversations"but",
+    "my point was",
+    "She is against gun control"
+  ]
+}

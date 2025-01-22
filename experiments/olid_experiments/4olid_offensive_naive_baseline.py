@@ -14,12 +14,13 @@ while not (project_root / '.git').exists() and project_root != project_root.pare
 sys.path.insert(0, str(project_root))
 
 from models.causal_neutral_model_variations import model_variations
-from data_loaders.imdb_sentiment.naive import IMDBDataModule
+from data_loaders.imdb_sentiment.naive_olid import OLIDDataModule
+
 from trainers.trainer import Trainer, save_trained_model
 from optimizers.optimizer_params import optimizer_configs
 
 
-def run_imdb_sentiment_experiment():
+def run_olid_sentiment_experiment():
     # Experiment parameters
     models = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", ""]
     models = ["electra_small_discriminator", "modern_bert"]
@@ -36,11 +37,11 @@ def run_imdb_sentiment_experiment():
     learning_rate = 0.0001
 
     # Prepare data loader
-    data_module = IMDBDataModule(classification_word)
+    data_module = OLIDDataModule(classification_word=classification_word)
 
     # Prepare results file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = "outputs/imdb_sentiment_classifier_naive_baseline"
+    results_dir = "outputs/olid_offensive_classifier_naive_baseline"
     os.makedirs(results_dir, exist_ok=True)
     results_file = os.path.join(results_dir, f"results_{timestamp}.csv")
 
@@ -88,11 +89,11 @@ def run_imdb_sentiment_experiment():
                 csvfile.flush()  # Ensure data is written immediately
 
                 # Save the trained model
-                save_trained_model(trainer, f"imdb_sentiment_naive_baseline_{model_name}_{num_epochs}epochs",
-                                   int(hidden_layer[0]))
+                save_trained_model(trainer, f"olid_offensive_naive_baseline_{model_name}_{num_epochs}epochs",
+                                int(hidden_layer[0]))
 
         print(f"Experiments completed. Results saved to {results_file}")
 
 
 if __name__ == "__main__":
-    run_imdb_sentiment_experiment()
+    run_olid_sentiment_experiment()
