@@ -18,19 +18,12 @@ sys.path.insert(0, str(project_root))
 
 import pandas as pd
 
-# First, read the causal mediation results
-# causal_files = [
-#     'outputs/imdb_sentiment_causal_mediation/results_20250102_143819.csv',
-#     'outputs/imdb_sentiment_causal_mediation/results_20250102_143842.csv',
-#     'outputs/imdb_sentiment_causal_mediation/results_20250102_143922.csv',
-#     'outputs/imdb_sentiment_causal_mediation/results_20250102_143943.csv'
-# ]
 causal_files = [
-    'outputs/imdb_sentiment_causal_mediation/results_20250103_214027.csv',
-    'outputs/imdb_sentiment_causal_mediation/results_20250103_214131.csv',
-    'outputs/imdb_sentiment_causal_mediation/results_20250103_214216.csv',
-    'outputs/imdb_sentiment_causal_mediation/results_20250103_214541.csv',
-    'outputs/imdb_sentiment_causal_mediation/results_20250106_060204.csv'
+    'outputs/olid_offensive_causal_mediation/results_20250103_214027.csv',
+    'outputs/olid_offensive_causal_mediation/results_20250103_214131.csv',
+    'outputs/olid_offensive_causal_mediation/results_20250103_214216.csv',
+    'outputs/olid_offensive_causal_mediation/results_20250103_214541.csv',
+    'outputs/olid_offensive_causal_mediation/results_20250106_060204.csv'
 ]
 causal_files.sort()
 
@@ -49,7 +42,7 @@ causal_combined = pd.concat(causal_dfs, ignore_index=True)
 
 # Get all baseline files
 baseline_files = [
-    'outputs/imdb_sentiment_classifier_naive_baseline/results_20241230_200701.csv'
+    'outputs/olid_offensive_classifier_naive_baseline/results_20241230_200701.csv'
 ]
 baseline_files.sort()
 
@@ -71,7 +64,7 @@ baseline_combined = pd.concat(baseline_dfs, ignore_index=True)
 baseline_combined['lambda_reg'] = None
 
 # Read causal subset results
-causal_subset_file = 'outputs/imdb_causal_only_precomputed/results_20241231_100417.csv'
+causal_subset_file = 'outputs/olid_causal_only_precomputed/results_20241231_100417.csv'
 causal_subset_df = pd.read_csv(causal_subset_file)
 causal_subset_df['experiment_type'] = 'causal_subset'
 causal_subset_df['lambda_reg'] = None
@@ -95,10 +88,10 @@ all_results = all_results[cols].sort_values(
 
 # Create timestamp for the output file
 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-output_path = f'outputs/imdb_sentiment_combined/results_all_{timestamp}.csv'
+output_path = f'outputs/olid_offensive_combined/results_all_{timestamp}.csv'
 
 # Ensure directory exists
-os.makedirs('outputs/imdb_sentiment_combined', exist_ok=True)
+os.makedirs('outputs/olid_offensive_combined', exist_ok=True)
 
 # Save combined results
 all_results.to_csv(output_path, index=False)

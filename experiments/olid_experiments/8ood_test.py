@@ -74,19 +74,19 @@ def run_comprehensive_ood_test():
     model_configs = [
         {
             'type': 'naive_baseline',
-            'path_template': "trained_models/imdb_sentiment_naive_baseline_{model}_{epochs}epochs/sentiment",
+            'path_template': "trained_models/olid_offensive_sentiment_naive_baseline_{model}_{epochs}epochs/sentiment",
             'needs_epochs': True,
             'lambda_reg': None
         },
         {
             'type': 'causal_phrases',
-            'path_template': "trained_models/imdb_causal_only_{model}_{epochs}epochs/sentiment",
+            'path_template': "trained_models/olid_offensive_causal_only_{model}_{epochs}epochs/sentiment",
             'needs_epochs': True,
             'lambda_reg': None
         },
         {
             'type': 'regularized',
-            'path_template': "trained_models/imdb_causal_mediation_{model}_lambda{lambda_reg}_{epochs}epochs/sentiment",  # Updated path template
+            'path_template': "trained_models/olid_causal_mediation_{model}_lambda{lambda_reg}_{epochs}epochs/sentiment",  # Updated path template
             'needs_epochs': True,  # Changed to True since epochs are needed in path
             'lambda_values': lambda_values
         }
