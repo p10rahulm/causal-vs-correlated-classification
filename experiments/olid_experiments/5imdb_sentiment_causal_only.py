@@ -23,18 +23,18 @@ from models.causal_neutral_model_variations import model_variations
 from trainers.trainer import Trainer, save_trained_model
 from optimizers.optimizer_params import optimizer_configs
 
-from data_loaders.imdb_sentiment.causal_only import CausalOnlyIMDBDataModule
+from data_loaders.imdb_sentiment.causal_only_olid import CausalOnlyOLIDDataModule
 
 
 def run_causal_only_experiment():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Paths to your precomputed JSON files
-    train_json = "data/imdb_sentiment/train_with_causal_neutral_splits_bert.json"
-    test_json  = "data/imdb_sentiment/test_with_causal_neutral_splits_bert.json"
+    train_json = "data/olid_sentiment/train_with_causal_neutral_splits_bert.json"
+    test_json  = "data/olid_sentiment/test_with_causal_neutral_splits_bert.json"
 
     # Create the data module
-    data_module = CausalOnlyIMDBDataModule(
+    data_module = CausalOnlyOLIDDataModule(
         train_json=train_json,
         test_json=test_json,
         val_split=0.1
@@ -69,7 +69,7 @@ def run_causal_only_experiment():
 
     # Prepare results file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = "outputs/imdb_causal_only_precomputed"
+    results_dir = "outputs/olid_causal_only_precomputed"
     os.makedirs(results_dir, exist_ok=True)
     results_file = os.path.join(results_dir, f"results_{timestamp}.csv")
 
@@ -98,7 +98,7 @@ def run_causal_only_experiment():
                     batch_size=batch_size,
                     num_epochs=num_epochs,
                     device=device,
-                    dataset_name="imdb_causal_only_precomputed",
+                    dataset_name="olid_causal_only_precomputed",
                     **training_params  # Include the additional training parameters
                 )
 
@@ -122,7 +122,7 @@ def run_causal_only_experiment():
                 csvfile.flush()
 
                 # Optionally save the model
-                save_trained_model(trainer, f"imdb_causal_only_{model_name}_{num_epochs}epochs", 1)
+                save_trained_model(trainer, f"olid_causal_only_{model_name}_{num_epochs}epochs", 1)
 
                 print(f"Done: {model_name}, epochs={num_epochs}, test_acc={test_acc:.4f}")
 
