@@ -1,17 +1,3 @@
-#!/usr/bin/env python3
-"""
-experiments/imdb_sentiment/causal_mediation.py
-
-Example experiment script for "Stage 2" regularized training with
-causal mediation. It:
-  1) Loads precomputed JSON data (with full text and z-only text).
-  2) Loads a baseline model checkpoint as reference (P_ref).
-  3) Copies that into a new model as policy (P_theta).
-  4) Trains for 5 more epochs with a RegularizedTrainer that implements
-     the ExpSE penalty or similar.
-  5) Logs per-epoch validation losses to a CSV file.
-"""
-
 import os
 import glob
 import sys
@@ -26,7 +12,6 @@ os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 import torch
 from transformers import AutoTokenizer
 
-# Adjust these imports to match your project's structure
 project_root = Path(__file__).resolve().parent
 while not (project_root / '.git').exists() and project_root != project_root.parent:
     project_root = project_root.parent
@@ -40,7 +25,6 @@ from trainers.trainer import save_trained_model
 from models.model_utilities import load_trained_model, find_model_file
 
 def get_latest_baseline_checkpoints():
-    """Get the latest checkpoint paths for all baseline models."""
     
     models = [
         "albert", "bert", "deberta", "distilbert", 
@@ -51,7 +35,7 @@ def get_latest_baseline_checkpoints():
     
     for model in models:
         # Construct the directory path - note how we handle electra's special case
-        model_dir = f"trained_models/imdb_sentiment_naive_baseline_{model}_5epochs/sentiment"
+        model_dir = f"trained_models/olid_offensive_naive_baseline_{model}_5epochs/sentiment"
         
         # Get latest checkpoint - using lowercase to match actual filenames
         pattern = os.path.join(model_dir, "causalneutralclassifier_1hidden_*.pth")
@@ -67,49 +51,26 @@ def get_latest_baseline_checkpoints():
     return baseline_checkpoints
 
 def run_causal_mediation_experiment():
-    """
-    Main entry point for the causal mediation experiment on IMDB.
-    Loads a set of baseline checkpoints, does 5 epochs of "ExpSE" or
-    similar penalty training with a RegularizedTrainer, logs results.
-    """
-    # 1) Basic setup
+    
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     logging.basicConfig(level=logging.INFO)
     logging.info(f"Using device: {device}")
 
     # Data paths: These JSONs should have "text", "neutral_phrases", "label", etc.
-    train_json = "data/imdb_sentiment/train_with_causal_neutral_splits_bert.json"
-    val_json   = "data/imdb_sentiment/test_with_causal_neutral_splits_bert.json"  
+    train_json = "data/olid_offensive/train_with_causal_neutral_splits_bert.json"
+    val_json   = "data/olid_offensive/test_with_causal_neutral_splits_bert.json"  
     # or if you prefer a separate "val" set, change accordingly
 
     # Create results folder
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = Path("outputs/imdb_sentiment_causal_mediation")
+    results_dir = Path("outputs/olid_offensive_causal_mediation")
     results_dir.mkdir(parents=True, exist_ok=True)
     results_csv = results_dir / f"results_{timestamp}.csv"
 
     baseline_checkpoints = get_latest_baseline_checkpoints()
 
-    # # We'll test a few baseline models. Map them to the checkpoint paths you gave:
-    # baseline_checkpoints = {
-    #     "albert":  "trained_models/imdb_sentiment_naive_baseline_albert_5epochs/sentiment/CausalNeutralClassifier_1hidden_2024-12-30_21-28-06.pth",
-    #     "bert":    "trained_models/imdb_sentiment_naive_baseline_bert_5epochs/sentiment/CausalNeutralClassifier_1hidden_2024-12-30_20-22-48.pth",
-    #     "deberta": "trained_models/imdb_sentiment_naive_baseline_deberta_5epochs/sentiment/CausalNeutralClassifier_1hidden_2024-12-31_05-23-05.pth",
-    #     "distilbert": "trained_models/imdb_sentiment_naive_baseline_distilbert_5epochs/sentiment/CausalNeutralClassifier_1hidden_2024-12-30_20-28-40.pth",
-    #     "electra_small_discriminator": "trained_models/imdb_sentiment_naive_baseline_electra_small_discriminator_5epochs/sentiment/CausalNeutralClassifier_1hidden_2024-12-30_20-11-26.pth",
-    #     "modern_bert": "trained_models/imdb_sentiment_naive_baseline_modern_bert_5epochs/sentiment/CausalNeutralClassifier_1hidden_2024-12-31_00-43-29.pth",
-    #     "roberta": "trained_models/imdb_sentiment_naive_baseline_roberta_5epochs/sentiment/CausalNeutralClassifier_1hidden_2024-12-30_20-25-53.pth",
-    # }
 
-    # Which subset of models to run?
     model_list = ["electra_small_discriminator", "distilbert", "roberta", "bert", "albert", "deberta", "modern_bert"]
-    # model_list = ["electra_small_discriminator", "modern_bert"]
-    # model_list = ["roberta", "distilbert"]
-    # model_list = ["distilbert", "roberta"]
-    # model_list = ["bert", "albert"]
-    # model_list = ["albert", "bert"] 
-    # model_list = ["deberta"]
-    # or just list(baseline_checkpoints.keys())
     batch_size = 16
     # Lambda runs
     lambda_values = [0.005, 0.01, 0.025, 0.05, 0.075, 0.1, 0.25, 0.5, 0.75, 1]
@@ -178,7 +139,7 @@ def run_causal_mediation_experiment():
                         model_theta=policy_model,
                         data_module=data_module,
                         optimizer_name="adamw",
-                        dataset_name=f"imdb_causal_mediation_{model_name}",
+                        dataset_name=f"olid_causal_mediation_{model_name}",
                         # standard Trainer params:
                         optimizer_params={
                             "lr": 5e-5,
@@ -248,7 +209,7 @@ def run_causal_mediation_experiment():
                     # 5e) Optionally, save the final policy model after these 5 epochs
                     save_trained_model(
                         trainer,
-                        dataset_name=f"imdb_causal_mediation_{model_name}_lambda{lambda_reg}_{regularized_epochs}epochs",
+                        dataset_name=f"olid_causal_mediation_{model_name}_lambda{lambda_reg}_{regularized_epochs}epochs",
                         num_hidden_layers=1
                     )
 
